@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
 export interface AnalysisData {
     summary: string;
