@@ -1,11 +1,10 @@
-"use client";
 import { useEffect, useState, useMemo } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { fetchHealthLogs, updateLogData } from "@/lib/features/health/healthSlice";
+import { useAuth } from "@/features/auth/useAuth";
+import { useHealthLogs, useUpdateLogDate, useDeleteLog } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
 import AnalysisResult, { normalizeMetricName } from "@/components/AnalysisResult";
 import { TrendingUp, ChevronRight, Clock, Trash2, Edit2, Save, X, LayoutGrid, BarChart2, AlertCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { formatDate } from "@/lib/date";
 
 // --- Highcharts Imports ---
@@ -98,12 +97,12 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                     <tbody className="divide-y divide-gray-50">
                     {Object.entries(groupedMetrics).map(([category, metrics]) => (
                         <>
-                            {/* ✅ แก้ไข: ล็อคหัวข้อหมวดหมู่ (Sticky Category) */}
+                            {/* Sticky Category */}
                             <tr key={category} className="bg-black">
                                 <td className="py-3 px-6 text-sm font-bold text-white sticky left-0 z-30 bg-black border-r border-gray-800 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.5)]">
                                     {category}
                                 </td>
-                                {/* ส่วนที่เหลือถมดำ */}
+                                {/* Fill rest with black */}
                                 <td colSpan={compareLogs.length} className="bg-black"></td>
                             </tr>
 
@@ -152,19 +151,21 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
 // --- Main Page ---
 
 export default function LogsPage() {
-    const { user, status: authStatus } = useAppSelector((state) => state.auth);
-    const { logs, status: logsStatus } = useAppSelector((state) => state.health);
-    const dispatch = useAppDispatch();
-    const router = useRouter();
+    const { user, status: authStatus } = useAuth();
+    const { data: logs, isLoading: logsLoading } = useHealthLogs(user?.uid);
+    const deleteLogMutation = useDeleteLog();
+    const updateLogDateMutation = useUpdateLogDate();
+
+    const navigate = useNavigate();
 
     const [activeLogId, setActiveLogId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'detail' | 'compare'>('detail');
     const [isEditing, setIsEditing] = useState(false);
     const [editDate, setEditDate] = useState("");
 
-    useEffect(() => { if (authStatus === "unauthenticated") router.push("/"); }, [authStatus, router]);
-    useEffect(() => { if (user?.uid) dispatch(fetchHealthLogs(user.uid)); }, [user, dispatch]);
-
+    useEffect(() => { if (authStatus === "unauthenticated") navigate({ to: "/" }); }, [authStatus, navigate]);
+    
+    // Auto-select first log logic
     const activeLog = useMemo(() => {
         if (!logs || logs.length === 0) return null;
         if (activeLogId) {
@@ -205,7 +206,6 @@ export default function LogsPage() {
             return {
                 name: metricName,
                 data,
-                // ✅ แก้ไข: บังคับปิด Marker ที่ระดับ Series โดยตรง
                 marker: { enabled: false, symbol: 'circle' }
             };
         });
@@ -279,7 +279,6 @@ export default function LogsPage() {
             },
             plotOptions: {
                 series: {
-                    // เผื่อไว้: ปิด Marker ในระดับ Global Plot Options ด้วย
                     marker: { enabled: false, states: { hover: { enabled: true } } },
                     lineWidth: 3
                 }
@@ -296,10 +295,20 @@ export default function LogsPage() {
 
     const handleSelectLog = (logId: string) => { setActiveLogId(logId); setIsEditing(false); setActiveTab('detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const startEdit = () => { if (!activeLog?.createdAt) return; setActiveLogId(activeLog.id); setEditDate(new Date(activeLog.createdAt).toLocaleDateString('en-CA')); setIsEditing(true); };
-    const saveDate = async () => { if (!user || !editDate || !activeLog) return; await dispatch(updateLogData({ userId: user.uid, logId: activeLog.id, updates: { createdAt: new Date(editDate).getTime() } })); setIsEditing(false); };
-    const handleDelete = async () => { if (!confirm("ยืนยันการลบ?")) return; if (!user || !activeLog) return; await dispatch(updateLogData({ userId: user.uid, logId: activeLog.id, updates: { status: 0 } })); };
+    
+    const saveDate = async () => { 
+        if (!user || !editDate || !activeLog) return; 
+        updateLogDateMutation.mutate({ userId: user.uid, logId: activeLog.id, newDate: new Date(editDate).getTime() });
+        setIsEditing(false); 
+    };
+    
+    const handleDelete = async () => { 
+        if (!confirm("ยืนยันการลบ?")) return; 
+        if (!user || !activeLog) return; 
+        deleteLogMutation.mutate({ userId: user.uid, logId: activeLog.id });
+    };
 
-    if (authStatus === "loading" || logsStatus === "loading") return <div className="min-h-screen bg-[#F5F5F7]"><Navbar /><LogsSkeleton /></div>;
+    if (authStatus === "loading" || logsLoading) return <div className="min-h-screen bg-[#F5F5F7]"><Navbar /><LogsSkeleton /></div>;
     if (!user) return null;
 
     return (
@@ -350,7 +359,7 @@ export default function LogsPage() {
                         {activeTab === 'compare' && (
                             <div className="space-y-6 animate-fade-in-up">
                                 {/* --- Highcharts Section --- */}
-                                {logs.length > 1 && (
+                                {((logs || []).length > 1) && (
                                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
                                         <div className="flex items-center gap-2 mb-6">
                                             <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20}/></div>
@@ -362,7 +371,7 @@ export default function LogsPage() {
                                     </div>
                                 )}
 
-                                <ComparisonTable logs={logs} />
+                                <ComparisonTable logs={logs || []} />
                             </div>
                         )}
                     </div>
@@ -374,7 +383,7 @@ export default function LogsPage() {
                 <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
                     <div className="space-y-4">
-                        {logs.map((log) => {
+                        {(logs || []).map((log) => {
                             if (!log || !log.createdAt) return null;
                             const isActive = activeLog?.id === log.id;
 

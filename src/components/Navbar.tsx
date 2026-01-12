@@ -1,33 +1,23 @@
-"use client";
-import Link from "next/link";
-import {usePathname} from "next/navigation";
-import {Activity, User, History, LogOut} from "lucide-react";
-import {useAppDispatch} from "@/lib/hooks";
-import {logout} from "@/lib/features/auth/authSlice";
-import {clearLogs} from "@/lib/features/health/healthSlice";
-import {signOut} from "firebase/auth";
-import {auth} from "@/lib/firebase";
+import { Link } from "@tanstack/react-router";
+import { Activity, LogOut } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function Navbar() {
-    const pathname = usePathname();
-    const dispatch = useAppDispatch();
-
     const handleLogout = async () => {
         await signOut(auth);
         localStorage.removeItem("health_app_disclaimer_accepted");
-        dispatch(logout());
-        dispatch(clearLogs());
+        // AuthContext handles state update via onAuthStateChanged
     };
-
-    const linkClass = (path: string) =>
-        `flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium ${
-            pathname === path ? "bg-black text-white" : "text-gray-500 hover:bg-gray-200"
-        }`;
+    // TanStack Router Link supports activeProps/inactiveProps but simplifies "nav link" styling with [&.active] or props.
+    // However, for advanced styling based on active state, we can use the `activeProps` or rely on data attributes if configured.
+    // Actually, simple className conditionally is easiest if we don't have direct access.
+    // TanStack Router Links automatically get `data-status="active"` when active.
 
     return (
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
             <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
-                <Link href="/" className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Link to="/" className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <div className="bg-black text-white p-1 rounded-lg">
                         <Activity size={18}/>
                     </div>
@@ -35,9 +25,16 @@ export default function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-full">
-                    <Link href="/" className={linkClass("/")}>ตรวจใหม่</Link>
-                    <Link href="/logs" className={linkClass("/logs")}>ประวัติ</Link>
-                    <Link href="/profile" className={linkClass("/profile")}>โปรไฟล์</Link>
+                    {/* Use 'activeProps' for active state styling or just rely on global class/data attribute */}
+                    <Link to="/" className="flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
+                        ตรวจใหม่
+                    </Link>
+                    <Link to="/logs" className="flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
+                        ประวัติ
+                    </Link>
+                    <Link to="/profile" className="flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
+                        โปรไฟล์
+                    </Link>
                 </div>
 
                 <button onClick={handleLogout}
