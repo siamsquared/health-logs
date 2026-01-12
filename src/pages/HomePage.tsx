@@ -1,21 +1,17 @@
-"use client";
-
-import {useState} from "react";
-import {signInWithPopup} from "firebase/auth";
-import {auth, googleProvider, storage, db} from "@/lib/firebase";
-import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
-import {doc, setDoc, Timestamp} from "firebase/firestore"; // ✅ เปลี่ยน serverTimestamp เป็น Timestamp
-import {useAppSelector, useAppDispatch} from "@/lib/hooks";
-import {acceptDisclaimer} from "@/lib/features/auth/authSlice";
-import {addNewLog} from "@/lib/features/health/healthSlice";
+import { useState } from "react";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider, storage, db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
+import { useAuth } from "@/features/auth/useAuth";
 import Navbar from "@/components/Navbar";
 import DisclaimerModal from "@/components/DisclaimerModal";
 import AnalysisResult from "@/components/AnalysisResult";
-import {Upload, Activity} from "lucide-react";
+import { Upload, Activity } from "lucide-react";
+import { analyzeImage } from "@/services/ai";
 
-export default function Home() {
-    const dispatch = useAppDispatch();
-    const {user, status, isDisclaimerAccepted} = useAppSelector((state) => state.auth);
+export default function HomePage() {
+    const { user, status, isDisclaimerAccepted, acceptDisclaimer } = useAuth();
     const isAuthenticated = status === "authenticated" && user;
     const isAuthLoading = status === "loading";
 
@@ -30,12 +26,10 @@ export default function Home() {
         }
     };
     const handleAgreeDisclaimer = () => {
-        localStorage.setItem("health_app_disclaimer_accepted", "true");
-        dispatch(acceptDisclaimer());
+        acceptDisclaimer();
     };
 
-    // คำนวณอายุจากวันเกิด (สำหรับส่งไป AI)
-    const calculateAge = (birthDateString?: string) => {
+    const calculateAge = (birthDateString?: string | null) => {
         if (!birthDateString) return null;
         try {
             const birthDate = new Date(birthDateString);
@@ -64,39 +58,26 @@ export default function Home() {
                 height: user.height || "ไม่ระบุ"
             };
 
-            const res = await fetch("/api/analyze", {
-                method: "POST",
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({imageUrl: url, profile: profileData})
-            });
-
-            if (!res.ok) throw new Error("API Error");
-            const data = await res.json();
+            // Call Client-side Service
+            const data = await analyzeImage(url, profileData);
+            
             const reportId = Date.now().toString();
-
-            // ✅ ใช้ Timestamp.now() เพื่อให้เป็น Type เดียวกับตอน Update
             const nowTimestamp = Timestamp.now();
 
             await setDoc(doc(db, "users", user.uid, "reports", reportId), {
                 imageUrl: url,
                 analysis: data,
-                createdAt: nowTimestamp, // ✅ บันทึกเป็น Timestamp
+                createdAt: nowTimestamp,
                 status: 1
             });
-
-            dispatch(addNewLog({
-                id: reportId,
-                imageUrl: url,
-                analysis: data,
-                createdAt: nowTimestamp.toMillis(), // ✅ แปลงเป็น Number ให้ Redux
-                status: 1
-            }));
+            
+            // No need to dispatch anything. LogsPage will refetch if visited.
 
             setResult(data);
 
         } catch (error) {
             console.error(error);
-            alert("เกิดข้อผิดพลาด");
+            alert("เกิดข้อผิดพลาดในการวิเคราะห์ หรือ API Key ไม่ถูกต้อง");
         } finally {
             setProcessing(false);
         }
@@ -111,7 +92,7 @@ export default function Home() {
             {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer}/>}
 
             <div
-                className={`p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
+                className={`p-4 md:p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
                 <div className="max-w-4xl mx-auto animate-fade-in">
                     {!isAuthenticated && (
                         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
@@ -131,10 +112,10 @@ export default function Home() {
 
                     {isAuthenticated && !result && !processing && (
                         <div className="mt-12 text-center">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี, {user?.displayName?.split(' ')[0]}</h2>
-                            <p className="text-gray-500 mb-12 text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
+                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี, {user?.displayName?.split(' ')[0]}</h2>
+                            <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
-                                className="bg-white rounded-[3rem] p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
+                                className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
                                 <input type="file" onChange={handleFileUpload} accept="image/*" className="hidden"
                                        id="fileInput"/>
                                 <label htmlFor="fileInput"

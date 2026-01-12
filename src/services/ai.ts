@@ -1,13 +1,16 @@
-import {OpenAI} from "openai";
-import {NextResponse} from "next/server";
+import { OpenAI } from "openai";
+
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+if (!apiKey) {
+    console.warn("Missing VITE_OPENAI_API_KEY. AI features will not work.");
+}
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true // Required for client-side usage
 });
 
-export const maxDuration = 60;
-
-// ... (STANDARD_CRITERIA คงเดิม) ...
 const STANDARD_CRITERIA = JSON.stringify({
     "blood_chemistry": [
         {"test_name": "Blood Sugar", "min": 70, "max": 99, "unit": "mg/dl"},
@@ -45,11 +48,8 @@ const STANDARD_CRITERIA = JSON.stringify({
     ]
 });
 
-export async function POST(req: Request) {
+export async function analyzeImage(imageUrl: string, profile: any) {
     try {
-        // รับ profile เข้ามาด้วย
-        const {imageUrl, profile} = await req.json();
-
         const profileText = profile
             ? `
       *** ข้อมูลส่วนตัวของผู้ตรวจ (Profile) ***
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         const prompt = `
       คุณคือผู้เชี่ยวชาญด้านเทคนิคการแพทย์และสุขภาพ หน้าที่ของคุณคือวิเคราะห์รูปภาพผลตรวจสุขภาพ (Lab Report)
       และแปลงข้อมูลเป็น JSON ตามโครงสร้างที่กำหนด โดยยึด "เกณฑ์มาตรฐาน" (STANDARD_CRITERIA) และ "ข้อมูลส่วนตัว" (Profile) ของผู้ตรวจประกอบการวิเคราะห์
-
+      
       ${profileText}
 
       *** 1. เกณฑ์มาตรฐาน (STANDARD_CRITERIA) ***
@@ -135,9 +135,9 @@ export async function POST(req: Request) {
         let content = response.choices[0].message.content || "{}";
         content = content.replace(/```json/g, "").replace(/```/g, "");
 
-        return NextResponse.json(JSON.parse(content));
+        return JSON.parse(content);
     } catch (error) {
         console.error(error);
-        return NextResponse.json({error: "Error analyzing image"}, {status: 500});
+        throw new Error("Error analyzing image");
     }
 }

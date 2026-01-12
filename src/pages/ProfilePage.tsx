@@ -1,24 +1,22 @@
-"use client";
-import {useState, useEffect} from "react";
-import {useAppSelector, useAppDispatch} from "@/lib/hooks";
-import {updateProfileData} from "@/lib/features/auth/authSlice";
-import {doc, updateDoc} from "firebase/firestore";
-import {db} from "@/lib/firebase";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/features/auth/useAuth";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
-import {Save, Loader2, Calendar} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {differenceInYears, parseISO} from "date-fns";
+import { Save, Loader2, Calendar } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { differenceInYears, parseISO } from "date-fns";
 
 export default function ProfilePage() {
-    const {user, status} = useAppSelector((state) => state.auth);
-    const dispatch = useAppDispatch();
-    const router = useRouter();
+    const { user, status } = useAuth();
+    const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({birthDate: "", gender: "male", weight: "", height: ""});
+    const [formData, setFormData] = useState({birthDate: "", gender: "male", weight: "", height: "", phoneNumber: ""});
     const [saving, setSaving] = useState(false);
 
     // State to track if the image failed to load
     const [imageError, setImageError] = useState(false);
+    const [phoneError, setPhoneError] = useState("");
 
     const calculateAge = (dateString: string) => {
         if (!dateString) return "-";
@@ -29,28 +27,44 @@ export default function ProfilePage() {
         }
     };
 
+    const validatePhoneNumber = (phone: string) => {
+        if (!phone) return true; // Allow empty? If required, change this. Assuming optional based on original code, but user asked for validation, likely implies correctness if present.
+        // Rule: Start with 0 and be 10 digits
+        const phoneRegex = /^0\d{9}$/;
+        return phoneRegex.test(phone);
+    };
+
     useEffect(() => {
-        if (status === "unauthenticated") router.push("/");
-    }, [status, router]);
+        if (status === "unauthenticated") navigate({ to: "/" });
+    }, [status, navigate]);
 
     useEffect(() => {
         if (user) setFormData({
             birthDate: user.birthDate || "",
             gender: user.gender || "male",
             weight: user.weight?.toString() || "",
-            height: user.height?.toString() || ""
+            height: user.height?.toString() || "",
+            phoneNumber: user.phoneNumber || ""
         });
     }, [user]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
+
+        // Validation
+        if (formData.phoneNumber && !validatePhoneNumber(formData.phoneNumber)) {
+            setPhoneError("เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0 และมี 10 หลัก");
+            return;
+        }
+
         setSaving(true);
         const payload = {
             birthDate: formData.birthDate,
             gender: formData.gender,
             weight: formData.weight ? Number(formData.weight) : null,
-            height: formData.height ? Number(formData.height) : null
+            height: formData.height ? Number(formData.height) : null,
+            phoneNumber: formData.phoneNumber
         };
         try {
             await updateDoc(doc(db, "users", user.uid), {
@@ -59,7 +73,7 @@ export default function ProfilePage() {
                     chronic_diseases: user.chronic_diseases || []
                 }
             });
-            dispatch(updateProfileData(payload));
+            // AuthContext listens to onSnapshot, so local user state will update automatically.
             alert("บันทึกเรียบร้อย");
         } catch (error) {
             alert("Error");
@@ -76,14 +90,14 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
             <Navbar/>
-            <div className="max-w-2xl mx-auto p-6 animate-fade-in-up">
+            <div className="max-w-2xl mx-auto p-4 md:p-6 animate-fade-in-up">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold tracking-tight">ข้อมูลส่วนตัว</h1>
                     <p className="text-gray-500 mt-2">ตั้งค่าข้อมูลพื้นฐาน</p>
                 </div>
 
                 <form onSubmit={handleSubmit}
-                      className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
+                      className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
                     <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
 
                         {/* Logic to show Image or Default Avatar */}
@@ -107,6 +121,22 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="col-span-full space-y-2">
+                             <label className="text-sm font-medium text-gray-600">เบอร์มือถือ</label>
+                             <input type="tel" value={formData.phoneNumber}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        // Allow only numbers
+                                        if (!/^\d*$/.test(value)) return;
+                                        
+                                        setFormData({...formData, phoneNumber: value});
+                                        if (phoneError) setPhoneError("");
+                                    }}
+                                    maxLength={10}
+                                    placeholder="0xxxxxxxxx"
+                                    className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${phoneError ? "border-red-500 focus:border-red-500" : ""}`}/>
+                             {phoneError && <p className="text-red-500 text-sm pl-1">{phoneError}</p>}
+                        </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600 flex justify-between">
                                 วันเกิด {formData.birthDate && <span
