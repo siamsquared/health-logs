@@ -1,5 +1,3 @@
-"use client";
-import {useState, useEffect} from "react";
 import {AlertTriangle} from "lucide-react";
 
 export default function DisclaimerModal({onAgree}: { onAgree: () => void }) {
