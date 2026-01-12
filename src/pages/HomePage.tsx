@@ -92,7 +92,7 @@ export default function HomePage() {
             {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer}/>}
 
             <div
-                className={`p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
+                className={`p-4 md:p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
                 <div className="max-w-4xl mx-auto animate-fade-in">
                     {!isAuthenticated && (
                         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
@@ -112,10 +112,10 @@ export default function HomePage() {
 
                     {isAuthenticated && !result && !processing && (
                         <div className="mt-12 text-center">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี, {user?.displayName?.split(' ')[0]}</h2>
-                            <p className="text-gray-500 mb-12 text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
+                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี, {user?.displayName?.split(' ')[0]}</h2>
+                            <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
-                                className="bg-white rounded-[3rem] p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
+                                className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
                                 <input type="file" onChange={handleFileUpload} accept="image/*" className="hidden"
                                        id="fileInput"/>
                                 <label htmlFor="fileInput"

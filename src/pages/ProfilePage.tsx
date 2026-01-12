@@ -90,14 +90,14 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
             <Navbar/>
-            <div className="max-w-2xl mx-auto p-6 animate-fade-in-up">
+            <div className="max-w-2xl mx-auto p-4 md:p-6 animate-fade-in-up">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold tracking-tight">ข้อมูลส่วนตัว</h1>
                     <p className="text-gray-500 mt-2">ตั้งค่าข้อมูลพื้นฐาน</p>
                 </div>
 
                 <form onSubmit={handleSubmit}
-                      className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
+                      className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
                     <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
 
                         {/* Logic to show Image or Default Avatar */}

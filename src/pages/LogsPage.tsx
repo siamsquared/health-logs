@@ -315,7 +315,7 @@ export default function LogsPage() {
         <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
             <Navbar />
 
-            <div className="max-w-4xl mx-auto p-6 animate-fade-in">
+            <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in">
 
                 {/* Header */}
                 {activeLog && activeLog.createdAt && (
@@ -360,7 +360,7 @@ export default function LogsPage() {
                             <div className="space-y-6 animate-fade-in-up">
                                 {/* --- Highcharts Section --- */}
                                 {((logs || []).length > 1) && (
-                                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                                    <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-gray-100">
                                         <div className="flex items-center gap-2 mb-6">
                                             <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20}/></div>
                                             <h2 className="font-bold text-lg text-gray-800">แนวโน้มสุขภาพ</h2>
@@ -394,9 +394,9 @@ export default function LogsPage() {
                             }) || [];
 
                             return (
-                                <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
-                                    <div className="flex items-center gap-5 overflow-hidden w-full">
-                                        <div className={`w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
+                                <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
+                                    <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
+                                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
                                             <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
                                         </div>
                                         <div className="min-w-0 flex-1">

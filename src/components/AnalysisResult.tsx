@@ -80,7 +80,7 @@ export default function AnalysisResult({data}: { data: any }) {
         <div className="space-y-8 animate-fade-in-up">
 
             {/* Summary Card */}
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-3 relative z-10">
                     <div className="bg-black text-white p-3 rounded-2xl"><FileText size={24}/></div>
                     สรุปผลภาพรวม
@@ -129,7 +129,7 @@ export default function AnalysisResult({data}: { data: any }) {
 
             {/* Food & Advice */}
             <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-gray-200/50">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                     <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-3 text-xl">
                         <span className="bg-green-100 text-green-700 p-2 rounded-xl"><Apple
                             size={20}/></span> อาหารแนะนำ
@@ -144,7 +144,7 @@ export default function AnalysisResult({data}: { data: any }) {
                         ))}
                     </ul>
                 </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                     <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-3 text-xl">
                         <span className="bg-orange-100 text-orange-700 p-2 rounded-xl"><Dumbbell
                             size={20}/></span> คำแนะนำ
