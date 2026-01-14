@@ -15,6 +15,7 @@ export interface UserProfile extends Partial<User> {
     phoneNumber?: string | null;
     chronic_diseases?: string[];
     allergies?: string[];
+    createdAt?: any;
 }
 
 interface AuthContextType {
@@ -35,7 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedDisclaimer = localStorage.getItem("health_app_disclaimer_accepted") === "true";
         setIsDisclaimerAccepted(storedDisclaimer);
 
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        let unsubscribeUser: (() => void) | null = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+            // Cleanup previous user listener if exists
+            if (unsubscribeUser) {
+                unsubscribeUser();
+                unsubscribeUser = null;
+            }
+
             if (currentUser) {
                 const basicUserData = {
                     uid: currentUser.uid,
@@ -44,10 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     photoURL: currentUser.photoURL,
                 };
 
-                const unsubscribeUser = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+                unsubscribeUser = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
                     if (docSnap.exists()) {
-                        const profileData = docSnap.data().profile || {};
-                        setUser({ ...basicUserData, ...profileData });
+                        const data = docSnap.data();
+                        const profileData = data.profile || {};
+                        // Prioritize root display name if exists
+                        const finalUserData = { 
+                            ...basicUserData, 
+                            ...profileData,
+                            displayName: data.displayName || basicUserData.displayName,
+                            createdAt: data.createdAt
+                        };
+                        setUser(finalUserData);
                     } else {
                          // Create default if not exists (though usually we might want to do this only once)
                          // For now, if missing, just set basic data.
@@ -56,11 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setStatus("authenticated");
                 }, (error) => {
                     console.error("Auth Snapshot Error:", error);
-                    setUser({ ...basicUserData });
-                    setStatus("authenticated");
+                    // Do not restore stale user data on error during logout
+                    if (auth.currentUser) {
+                         setUser({ ...basicUserData });
+                         setStatus("authenticated");
+                    }
                 });
-
-                return () => unsubscribeUser();
             } else {
                 setUser(null);
                 setStatus("unauthenticated");
@@ -68,7 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeUser) {
+                unsubscribeUser();
+            }
+        };
     }, []);
 
     const acceptDisclaimer = () => {
