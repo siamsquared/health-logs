@@ -16,6 +16,7 @@ export interface UserProfile extends Partial<User> {
     chronic_diseases?: string[];
     allergies?: string[];
     createdAt?: any;
+    isProfileSetup?: boolean;
 }
 
 interface AuthContextType {
@@ -57,12 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         const profileData = data.profile || {};
-                        // Prioritize root display name if exists
                         const finalUserData = { 
                             ...basicUserData, 
                             ...profileData,
                             displayName: data.displayName || basicUserData.displayName,
-                            createdAt: data.createdAt
+                            createdAt: data.createdAt,
+                            isProfileSetup: profileData.isProfileSetup || false
                         };
                         setUser(finalUserData);
                     } else {

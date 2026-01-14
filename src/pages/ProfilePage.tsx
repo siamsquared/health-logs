@@ -82,7 +82,8 @@ export default function ProfilePage() {
                 uid: user.uid,
                 profile: {
                     ...payload,
-                    chronic_diseases: user.chronic_diseases || []
+                    chronic_diseases: user.chronic_diseases || [],
+                    isProfileSetup: true
                 }
             };
 
@@ -93,6 +94,7 @@ export default function ProfilePage() {
             await setDoc(doc(db, "users", user.uid), userPayload, { merge: true });
             // AuthContext listens to onSnapshot, so local user state will update automatically.
             alert("บันทึกเรียบร้อย");
+            navigate({ to: '/' });
         } catch (error) {
             alert("Error");
         } finally {
