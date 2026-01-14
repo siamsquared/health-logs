@@ -5,9 +5,11 @@ import { auth } from "@/lib/firebase";
 
 export default function Navbar() {
     const handleLogout = async () => {
-        await signOut(auth);
-        localStorage.removeItem("health_app_disclaimer_accepted");
-        // AuthContext handles state update via onAuthStateChanged
+        if (window.confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
+            await signOut(auth);
+            localStorage.removeItem("health_app_disclaimer_accepted");
+            // AuthContext handles state update via onAuthStateChanged
+        }
     };
     // TanStack Router Link supports activeProps/inactiveProps but simplifies "nav link" styling with [&.active] or props.
     // However, for advanced styling based on active state, we can use the `activeProps` or rely on data attributes if configured.

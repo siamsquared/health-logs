@@ -12,6 +12,7 @@ import { analyzeImage } from "@/services/ai";
 
 export default function HomePage() {
     const { user, status, isDisclaimerAccepted, acceptDisclaimer } = useAuth();
+    console.log('user :>> ', user);
     const isAuthenticated = status === "authenticated" && user;
     const isAuthLoading = status === "loading";
 
@@ -92,8 +93,7 @@ export default function HomePage() {
         }
     };
 
-    if (isAuthLoading) return <div
-        className="min-h-screen flex items-center justify-center bg-[#F5F5F7] text-gray-400">Loading...</div>;
+    if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7] text-gray-400">Loading...</div>;
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
