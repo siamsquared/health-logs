@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider, storage, db } from "@/lib/firebase";
+import { auth, googleProvider, facebookProvider, storage, db } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/features/auth/useAuth";
@@ -25,6 +25,15 @@ export default function HomePage() {
             console.error(e);
         }
     };
+
+    const handleFacebookLogin = async () => {
+        try {
+            await signInWithPopup(auth, facebookProvider);
+        } catch (e) {
+            console.error("Facebook Login Error:", e);
+        }
+    };
+
     const handleAgreeDisclaimer = () => {
         acceptDisclaimer();
     };
@@ -96,17 +105,24 @@ export default function HomePage() {
                 <div className="max-w-4xl mx-auto animate-fade-in">
                     {!isAuthenticated && (
                         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-                            <div
-                                className="w-24 h-24 bg-black text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl">
-                                <Activity size={48}/></div>
+                            <div className="w-24 h-24 bg-black text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl">
+                                <Activity size={48}/>
+                            </div>
                             <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-6">AI Health
                                 Check.</h1>
                             <p className="text-xl text-gray-500 max-w-lg mb-12 font-medium">เปลี่ยนผลตรวจสุขภาพที่เข้าใจยาก
                                 ให้เป็นเรื่องง่ายด้วย AI</p>
-                            <button onClick={handleLogin}
-                                    className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-800 hover:scale-105 transition shadow-lg">Start
-                                with Google
-                            </button>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={handleLogin}
+                                        className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-800 hover:scale-105 transition shadow-lg">Start
+                                    with Google
+                                </button>
+                                <button onClick={handleFacebookLogin}
+                                        className="bg-[#1877F2] text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-[#165dbb] hover:scale-105 transition shadow-lg">Start
+                                    with Facebook
+                                </button>
+
+                            </div>
                         </div>
                     )}
 
