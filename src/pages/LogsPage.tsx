@@ -210,9 +210,9 @@ export default function LogsPage() {
             };
         });
 
-        const pastelColors = [
-            '#A0C4FF', '#FFADAD', '#CAFFBF', '#FDFFB6', '#BDB2FF',
-            '#FFC6FF', '#9BF6FF', '#FFD6A5', '#E4C1F9', '#D0F4DE'
+        const standardColors = [
+            '#2563EB', '#DC2626', '#16A34A', '#EA580C', '#9333EA',
+            '#DB2777', '#0891B2', '#EAB308', '#4F46E5', '#0D9488'
         ];
 
         return {
@@ -283,7 +283,7 @@ export default function LogsPage() {
                     lineWidth: 3
                 }
             },
-            colors: pastelColors,
+            colors: standardColors,
             credits: { enabled: false },
             legend: {
                 itemStyle: { color: '#4B5563', fontWeight: 'normal', fontSize: '11px' },
@@ -339,11 +339,11 @@ export default function LogsPage() {
                                             <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14} /></button>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM YYYY')}</span>
+                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
                                     )}
                                 </div>
                             </div>
-                            {!isEditing && (
+                            {!isEditing && activeTab === 'detail' && (
                                 <div className="flex gap-2">
                                     <button onClick={startEdit} className="p-2 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-black transition shadow-sm"><Edit2 size={16} /></button>
                                     <button onClick={handleDelete} className="p-2 bg-red-50 border border-red-100 text-red-500 rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"><Trash2 size={16} /></button>
@@ -437,11 +437,10 @@ export default function LogsPage() {
                                     </div>
                                 )
                             })}
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 )}
-
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

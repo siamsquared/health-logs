@@ -131,7 +131,11 @@ export default function ProfilePage() {
             await setDoc(doc(db, "users", user.uid), userPayload, { merge: true });
             // AuthContext listens to onSnapshot, so local user state will update automatically.
             alert("บันทึกเรียบร้อย");
-            navigate({ to: '/' });
+            
+            // Only reopen the review page (home) the first time profile is set up
+            if (!user.isProfileSetup) {
+                navigate({ to: '/' });
+            }
         } catch (error) {
             alert("Error");
         } finally {

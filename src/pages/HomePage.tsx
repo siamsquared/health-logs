@@ -27,11 +27,11 @@ const FacebookIcon = () => (
 
 export default function HomePage() {
     const { user, status, isDisclaimerAccepted, acceptDisclaimer } = useAuth();
-    console.log('user :>> ', user);
     const isAuthenticated = status === "authenticated" && user;
     const isAuthLoading = status === "loading";
 
     const [processing, setProcessing] = useState(false);
+    const [processingStatus, setProcessingStatus] = useState("");
     const [result, setResult] = useState<any>(null);
 
     const handleLogin = async () => {
@@ -67,44 +67,56 @@ export default function HomePage() {
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || !isAuthenticated || !user) return;
+        if (!e.target.files || e.target.files.length === 0 || !isAuthenticated || !user) return;
+
+        const files = Array.from(e.target.files);
         setProcessing(true);
-        const file = e.target.files[0];
+        setProcessingStatus(`กำลังเตรียมอัปโหลด ${files.length} รายการ...`);
+
+        const profileData = {
+            gender: user.gender || "ไม่ระบุ",
+            age: calculateAge(user.birthDate) || "ไม่ระบุ",
+            weight: user.weight || "ไม่ระบุ",
+            height: user.height || "ไม่ระบุ"
+        };
 
         try {
-            const storageRef = ref(storage, `reports/${user.uid}/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
+            const uploadedUrls: string[] = [];
 
-            const profileData = {
-                gender: user.gender || "ไม่ระบุ",
-                age: calculateAge(user.birthDate) || "ไม่ระบุ",
-                weight: user.weight || "ไม่ระบุ",
-                height: user.height || "ไม่ระบุ"
-            };
+            // Upload all files first
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                setProcessingStatus(`กำลังอัปโหลดไฟล์ที่ ${i + 1}/${files.length}: ${file.name}`);
 
-            // Call Client-side Service
-            const data = await analyzeImage(url, profileData);
+                const storageRef = ref(storage, `reports/${user.uid}/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                uploadedUrls.push(url);
+            }
+
+            // Analyze all images in one go
+            setProcessingStatus(`กำลังประมวลผลข้อมูลจาก ${files.length} รูปภาพ...`);
+            const data = await analyzeImage(uploadedUrls, profileData);
 
             const reportId = Date.now().toString();
             const nowTimestamp = Timestamp.now();
 
             await setDoc(doc(db, "users", user.uid, "reports", reportId), {
-                imageUrl: url,
+                imageUrl: uploadedUrls[0], // Use first image as representative
+                imageUrls: uploadedUrls,    // Store all URLs
                 analysis: data,
                 createdAt: nowTimestamp,
                 status: 1
             });
 
-            // No need to dispatch anything. LogsPage will refetch if visited.
-
             setResult(data);
-
         } catch (error) {
             console.error(error);
-            alert("เกิดข้อผิดพลาดในการวิเคราะห์ หรือ API Key ไม่ถูกต้อง");
+            alert("เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setProcessing(false);
+            setProcessingStatus("");
+            e.target.value = "";
         }
     };
 
@@ -148,7 +160,7 @@ export default function HomePage() {
                             <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
                                 className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
-                                <input type="file" onChange={handleFileUpload} accept="image/*" className="hidden"
+                                <input type="file" onChange={handleFileUpload} accept="image/*" multiple className="hidden"
                                     id="fileInput" />
                                 <label htmlFor="fileInput"
                                     className="cursor-pointer flex flex-col items-center gap-6 w-full h-full relative z-10">
@@ -167,7 +179,7 @@ export default function HomePage() {
                             <div
                                 className="animate-spin w-16 h-16 border-4 border-gray-200 border-t-black rounded-full mx-auto mb-8"></div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-2">AI กำลังวิเคราะห์...</h3>
-                            <p className="text-gray-500">กำลังประมวลผลข้อมูลของคุณ</p>
+                            <p className="text-gray-500">{processingStatus || "กำลังประมวลผลข้อมูลของคุณ"}</p>
                         </div>
                     )}
 
