@@ -3,7 +3,7 @@ import { useAuth } from "@/features/auth/useAuth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
-import { Save, Loader2, Calendar, Edit2, X } from "lucide-react";
+import { Save, Loader2, Calendar, Edit2, X, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { differenceInYears, parseISO } from "date-fns";
 
@@ -216,13 +216,16 @@ export default function ProfilePage() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">เพศ</label>
-                            <select value={formData.gender}
-                                onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={!isEditing}>
-                                <option value="male">ชาย</option>
-                                <option value="female">หญิง</option>
-                            </select>
+                            <div className="relative">
+                                <select value={formData.gender}
+                                    onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                                    className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={!isEditing}>
+                                    <option value="male">ชาย</option>
+                                    <option value="female">หญิง</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">น้ำหนัก (kg)</label>
