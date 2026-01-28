@@ -70,7 +70,7 @@ export default function HomePage() {
 
             // Call Client-side Service
             const data = await analyzeImage(url, profileData);
-            
+
             const reportId = Date.now().toString();
             const nowTimestamp = Timestamp.now();
 
@@ -80,14 +80,14 @@ export default function HomePage() {
                 createdAt: nowTimestamp,
                 status: 1
             });
-            
+
             // No need to dispatch anything. LogsPage will refetch if visited.
 
             setResult(data);
 
         } catch (error) {
             console.error(error);
-            alert("เกิดข้อผิดพลาดในการวิเคราะห์ หรือ API Key ไม่ถูกต้อง");
+            alert("เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setProcessing(false);
         }
@@ -97,8 +97,8 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
-            {isAuthenticated && <Navbar/>}
-            {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer}/>}
+            {isAuthenticated && <Navbar />}
+            {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer} />}
 
             <div
                 className={`p-4 md:p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
@@ -106,7 +106,7 @@ export default function HomePage() {
                     {!isAuthenticated && (
                         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
                             <div className="w-24 h-24 bg-black text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl">
-                                <Activity size={48}/>
+                                <Activity size={48} />
                             </div>
                             <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-6">AI Health
                                 Check.</h1>
@@ -114,11 +114,11 @@ export default function HomePage() {
                                 ให้เป็นเรื่องง่ายด้วย AI</p>
                             <div className="flex flex-col gap-3">
                                 <button onClick={handleLogin}
-                                        className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-800 hover:scale-105 transition shadow-lg">Start
+                                    className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-800 hover:scale-105 transition shadow-lg">Start
                                     with Google
                                 </button>
                                 <button onClick={handleFacebookLogin}
-                                        className="bg-[#1877F2] text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-[#165dbb] hover:scale-105 transition shadow-lg">Start
+                                    className="bg-[#1877F2] text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-[#165dbb] hover:scale-105 transition shadow-lg">Start
                                     with Facebook
                                 </button>
 
@@ -133,12 +133,12 @@ export default function HomePage() {
                             <div
                                 className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
                                 <input type="file" onChange={handleFileUpload} accept="image/*" className="hidden"
-                                       id="fileInput"/>
+                                    id="fileInput" />
                                 <label htmlFor="fileInput"
-                                       className="cursor-pointer flex flex-col items-center gap-6 w-full h-full relative z-10">
+                                    className="cursor-pointer flex flex-col items-center gap-6 w-full h-full relative z-10">
                                     <div
                                         className="w-24 h-24 bg-[#F5F5F7] rounded-full flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition duration-500">
-                                        <Upload size={40}/></div>
+                                        <Upload size={40} /></div>
                                     <div><p className="text-2xl font-bold text-gray-900 mb-2">แตะเพื่ออัปโหลด</p><p
                                         className="text-gray-400 font-medium">รูปถ่ายใบผลตรวจสุขภาพ</p></div>
                                 </label>
@@ -160,10 +160,10 @@ export default function HomePage() {
                             <div className="flex justify-between items-center px-2">
                                 <h3 className="text-2xl font-bold">ผลการตรวจ</h3>
                                 <button onClick={() => setResult(null)}
-                                        className="text-sm font-medium text-gray-500 hover:text-black transition">ปิดหน้านี้
+                                    className="text-sm font-medium text-gray-500 hover:text-black transition">ปิดหน้านี้
                                 </button>
                             </div>
-                            <AnalysisResult data={result}/>
+                            <AnalysisResult data={result} />
                         </div>
                     )}
                 </div>

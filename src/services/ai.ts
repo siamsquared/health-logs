@@ -13,38 +13,38 @@ const openai = new OpenAI({
 
 const STANDARD_CRITERIA = JSON.stringify({
     "blood_chemistry": [
-        {"test_name": "Blood Sugar", "min": 70, "max": 99, "unit": "mg/dl"},
-        {"test_name": "BUN", "min": 8, "max": 23, "unit": "mg/dl"},
-        {"test_name": "Creatinine", "min": 0.60, "max": 1.30, "unit": "mg/dl"},
-        {"test_name": "eGFR", "min": 90.00, "max": null, "unit": "ml/min/1.73m^2", "note": "> 90.00"},
-        {"test_name": "Uric acid", "min": 3.4, "max": 7.0, "unit": "mg/dl"},
-        {"test_name": "Cholesterol", "min": null, "max": 200, "unit": "mg/dl", "note": "< 200"},
-        {"test_name": "Triglyceride", "min": null, "max": 150, "unit": "mg/dl", "note": "< 150"},
-        {"test_name": "HDL-C", "min": 40, "max": null, "unit": "mg/dl", "note": "> 40"},
-        {"test_name": "LDL-C", "min": null, "max": 130, "unit": "mg/dl", "note": "< 130"},
-        {"test_name": "SGOT", "min": 0, "max": 40, "unit": "U/L"},
-        {"test_name": "SGPT", "min": 0, "max": 41, "unit": "U/L"},
-        {"test_name": "Alk-phos", "min": 40, "max": 129, "unit": "U/L"}
+        { "test_name": "Blood Sugar", "min": 70, "max": 99, "unit": "mg/dl" },
+        { "test_name": "BUN", "min": 8, "max": 23, "unit": "mg/dl" },
+        { "test_name": "Creatinine", "min": 0.60, "max": 1.30, "unit": "mg/dl" },
+        { "test_name": "eGFR", "min": 90.00, "max": null, "unit": "ml/min/1.73m^2", "note": "> 90.00" },
+        { "test_name": "Uric acid", "min": 3.4, "max": 7.0, "unit": "mg/dl" },
+        { "test_name": "Cholesterol", "min": null, "max": 200, "unit": "mg/dl", "note": "< 200" },
+        { "test_name": "Triglyceride", "min": null, "max": 150, "unit": "mg/dl", "note": "< 150" },
+        { "test_name": "HDL-C", "min": 40, "max": null, "unit": "mg/dl", "note": "> 40" },
+        { "test_name": "LDL-C", "min": null, "max": 130, "unit": "mg/dl", "note": "< 130" },
+        { "test_name": "SGOT", "min": 0, "max": 40, "unit": "U/L" },
+        { "test_name": "SGPT", "min": 0, "max": 41, "unit": "U/L" },
+        { "test_name": "Alk-phos", "min": 40, "max": 129, "unit": "U/L" }
     ],
     "urinalysis": [
-        {"test_name": "Color", "text_value": "Yellow"},
-        {"test_name": "Appearance", "text_value": "Clear"},
-        {"test_name": "Sp.Gr.", "min": 1.005, "max": 1.030},
-        {"test_name": "pH", "min": 5.0, "max": 8.0},
-        {"test_name": "Protein", "text_value": "Negative"},
-        {"test_name": "Glucose", "text_value": "Negative"},
-        {"test_name": "Ketone", "text_value": "Negative"},
-        {"test_name": "Blood", "text_value": "Negative"},
-        {"test_name": "WBC", "min": 0, "max": 5, "unit": "/HPF"},
-        {"test_name": "RBC", "min": 0, "max": 5, "unit": "/HPF"},
-        {"test_name": "Epithelium", "min": 0, "max": 5, "unit": "/HPF"}
+        { "test_name": "Color", "text_value": "Yellow" },
+        { "test_name": "Appearance", "text_value": "Clear" },
+        { "test_name": "Sp.Gr.", "min": 1.005, "max": 1.030 },
+        { "test_name": "pH", "min": 5.0, "max": 8.0 },
+        { "test_name": "Protein", "text_value": "Negative" },
+        { "test_name": "Glucose", "text_value": "Negative" },
+        { "test_name": "Ketone", "text_value": "Negative" },
+        { "test_name": "Blood", "text_value": "Negative" },
+        { "test_name": "WBC", "min": 0, "max": 5, "unit": "/HPF" },
+        { "test_name": "RBC", "min": 0, "max": 5, "unit": "/HPF" },
+        { "test_name": "Epithelium", "min": 0, "max": 5, "unit": "/HPF" }
     ],
     "stool_examination": [
-        {"test_name": "Color", "text_value": "Brown / Yellow"},
-        {"test_name": "WBC", "text_value": "Negative"},
-        {"test_name": "RBC", "text_value": "Negative"},
-        {"test_name": "OVA / PARASITE", "text_value": "Negative"},
-        {"test_name": "OCCULT BLOOD", "text_value": "Negative"}
+        { "test_name": "Color", "text_value": "Brown / Yellow" },
+        { "test_name": "WBC", "text_value": "Negative" },
+        { "test_name": "RBC", "text_value": "Negative" },
+        { "test_name": "OVA / PARASITE", "text_value": "Negative" },
+        { "test_name": "OCCULT BLOOD", "text_value": "Negative" }
     ]
 });
 
@@ -120,24 +120,31 @@ export async function analyzeImage(imageUrl: string, profile: any) {
 
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
+            response_format: { type: "json_object" },
             messages: [
                 {
                     role: "user",
                     content: [
-                        {type: "text", text: prompt},
-                        {type: "image_url", image_url: {url: imageUrl}},
+                        { type: "text", text: prompt },
+                        { type: "image_url", image_url: { url: imageUrl } },
                     ],
                 },
             ],
             max_tokens: 2500,
         });
 
-        let content = response.choices[0].message.content || "{}";
-        content = content.replace(/```json/g, "").replace(/```/g, "");
+        const content = response.choices[0].message.content || "{}";
 
-        return JSON.parse(content);
+        try {
+            // clean potential markdown if any (unlikely with json_object mode but safe to keep)
+            const cleanContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
+            return JSON.parse(cleanContent);
+        } catch (parseError) {
+            console.error("AI Response content that failed to parse:", content);
+            throw parseError;
+        }
     } catch (error) {
-        console.error(error);
-        throw new Error("Error analyzing image");
+        console.error("Error in analyzeImage:", error);
+        throw error;
     }
 }
