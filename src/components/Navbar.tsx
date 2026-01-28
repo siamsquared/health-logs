@@ -24,7 +24,7 @@ export default function Navbar() {
                         <div className="bg-black text-white p-1 rounded-lg">
                             <Activity size={18} />
                         </div>
-                        Health AI
+                        OneHealth
                     </Link>
 
                     <button onClick={handleLogout}
