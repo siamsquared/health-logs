@@ -11,7 +11,7 @@ export default function ProfilePage() {
     const { user, status } = useAuth();
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({birthDate: "", gender: "male", weight: "", height: "", phoneNumber: "", displayName: ""});
+    const [formData, setFormData] = useState({ birthDate: "", gender: "male", weight: "", height: "", phoneNumber: "", displayName: "" });
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -66,6 +66,16 @@ export default function ProfilePage() {
             return;
         }
 
+        if (formData.weight && Number(formData.weight) <= 0) {
+            alert("น้ำหนักต้องมากกว่า 0");
+            return;
+        }
+
+        if (formData.height && Number(formData.height) <= 0) {
+            alert("ส่วนสูงต้องมากกว่า 0");
+            return;
+        }
+
         setSaving(true);
         const payload = {
             birthDate: formData.birthDate,
@@ -116,7 +126,7 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
-            <Navbar/>
+            <Navbar />
             <div className="max-w-2xl mx-auto p-4 md:p-6 animate-fade-in-up">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold tracking-tight">ข้อมูลส่วนตัว</h1>
@@ -124,7 +134,7 @@ export default function ProfilePage() {
                 </div>
 
                 <form onSubmit={handleSubmit}
-                      className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
+                    className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
                     <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
 
                         {/* Logic to show Image or Default Avatar */}
@@ -144,51 +154,51 @@ export default function ProfilePage() {
 
                         <div>
                             <input type="text"
-                                   value={formData.displayName}
-                                   onChange={e => setFormData({...formData, displayName: e.target.value})}
-                                   disabled={!isEditing}
-                                   className="font-bold text-lg text-gray-900 bg-transparent border border-transparent rounded focus:bg-white focus:border-gray-200 outline-none transition disabled:opacity-100 disabled:cursor-text"
-                                   placeholder="ชื่อของคุณ"/>
+                                value={formData.displayName}
+                                onChange={e => setFormData({ ...formData, displayName: e.target.value })}
+                                disabled={!isEditing}
+                                className="font-bold text-lg text-gray-900 bg-transparent border border-transparent rounded focus:bg-white focus:border-gray-200 outline-none transition disabled:opacity-100 disabled:cursor-text"
+                                placeholder="ชื่อของคุณ" />
                             <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="col-span-full space-y-2">
-                             <label className="text-sm font-medium text-gray-600">เบอร์มือถือ</label>
-                             <input type="tel" value={formData.phoneNumber}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        // Allow only numbers
-                                        if (!/^\d*$/.test(value)) return;
-                                        
-                                        setFormData({...formData, phoneNumber: value});
-                                        if (phoneError) setPhoneError("");
-                                    }}
-                                    maxLength={10}
-                                    placeholder="0xxxxxxxxx"
-                                    className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${phoneError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
-                                    disabled={!isEditing} />
-                             {phoneError && <p className="text-red-500 text-sm pl-1">{phoneError}</p>}
+                            <label className="text-sm font-medium text-gray-600">เบอร์มือถือ</label>
+                            <input type="tel" value={formData.phoneNumber}
+                                onChange={e => {
+                                    const value = e.target.value;
+                                    // Allow only numbers
+                                    if (!/^\d*$/.test(value)) return;
+
+                                    setFormData({ ...formData, phoneNumber: value });
+                                    if (phoneError) setPhoneError("");
+                                }}
+                                maxLength={10}
+                                placeholder="0xxxxxxxxx"
+                                className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${phoneError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
+                                disabled={!isEditing} />
+                            {phoneError && <p className="text-red-500 text-sm pl-1">{phoneError}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600 flex justify-between">
                                 วันเกิด {formData.birthDate && <span
-                                className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)}</span>}
+                                    className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)}</span>}
                             </label>
                             <div className="relative">
                                 <input type="date" value={formData.birthDate}
-                                       onChange={e => setFormData({...formData, birthDate: e.target.value})}
-                                       className="w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                                       disabled={!isEditing}/>
-                                <Calendar className="absolute left-4 top-4 text-gray-400" size={20}/>
+                                    onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
+                                    className="w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={!isEditing} />
+                                <Calendar className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">เพศ</label>
                             <select value={formData.gender}
-                                    onChange={e => setFormData({...formData, gender: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
-                                    disabled={!isEditing}>
+                                onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={!isEditing}>
                                 <option value="male">ชาย</option>
                                 <option value="female">หญิง</option>
                             </select>
@@ -196,34 +206,50 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">น้ำหนัก (kg)</label>
                             <input type="number" value={formData.weight}
-                                   onChange={e => setFormData({...formData, weight: e.target.value})}
-                                   className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                                   disabled={!isEditing}/>
+                                min="1"
+                                step="any"
+                                onKeyDown={(e) => ["-", "+", "e", "E"].includes(e.key) && e.preventDefault()}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === "" || Number(val) > 0) {
+                                        setFormData({ ...formData, weight: val });
+                                    }
+                                }}
+                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={!isEditing} />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">ส่วนสูง (cm)</label>
                             <input type="number" value={formData.height}
-                                   onChange={e => setFormData({...formData, height: e.target.value})}
-                                   className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                                   disabled={!isEditing}/>
+                                min="1"
+                                step="any"
+                                onKeyDown={(e) => ["-", "+", "e", "E"].includes(e.key) && e.preventDefault()}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === "" || Number(val) > 0) {
+                                        setFormData({ ...formData, height: val });
+                                    }
+                                }}
+                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={!isEditing} />
                         </div>
                     </div>
-                    
+
                     {isEditing ? (
                         <div className="flex gap-4">
                             <button type="button" onClick={handleCancel}
-                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-4 rounded-2xl font-bold transition flex items-center justify-center gap-2">
-                                <X size={20}/> ยกเลิก
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-4 rounded-2xl font-bold transition flex items-center justify-center gap-2">
+                                <X size={20} /> ยกเลิก
                             </button>
                             <button type="submit" disabled={saving}
-                                    className="flex-1 bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
-                                {saving ? <Loader2 className="animate-spin"/> : <Save size={20}/>} บันทึก
+                                className="flex-1 bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                                {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />} บันทึก
                             </button>
                         </div>
                     ) : (
                         <button type="button" onClick={() => setIsEditing(true)}
-                                className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2">
-                            <Edit2 size={20}/> แก้ไขข้อมูล
+                            className="w-full bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2">
+                            <Edit2 size={20} /> แก้ไขข้อมูล
                         </button>
                     )}
 
