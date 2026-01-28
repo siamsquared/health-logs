@@ -298,6 +298,13 @@ export default function LogsPage() {
 
     const saveDate = async () => {
         if (!user || !editDate || !activeLog) return;
+
+        const today = new Date().toLocaleDateString('en-CA');
+        if (editDate > today) {
+            alert("วันที่ต้องไม่เป็นวันที่ในอนาคต");
+            return;
+        }
+
         updateLogDateMutation.mutate({ userId: user.uid, logId: activeLog.id, newDate: new Date(editDate).getTime() });
         setIsEditing(false);
     };
@@ -327,7 +334,7 @@ export default function LogsPage() {
                                     <Clock size={16} className="text-gray-500" />
                                     {isEditing ? (
                                         <div className="flex items-center gap-2 animate-fade-in">
-                                            <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none" />
+                                            <input type="date" value={editDate} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setEditDate(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none" />
                                             <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition"><Save size={14} /></button>
                                             <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14} /></button>
                                         </div>
