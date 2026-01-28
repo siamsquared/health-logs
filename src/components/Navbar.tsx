@@ -22,14 +22,14 @@ export default function Navbar() {
                 <div className="w-full md:w-auto flex justify-between items-center">
                     <Link to="/" className="text-xl font-bold text-gray-900 flex items-center gap-2">
                         <div className="bg-black text-white p-1 rounded-lg">
-                            <Activity size={18}/>
+                            <Activity size={18} />
                         </div>
                         Health AI
                     </Link>
-                    
+
                     <button onClick={handleLogout}
-                            className="flex md:hidden items-center gap-2 text-gray-400 hover:text-red-500 transition text-sm font-medium">
-                        <LogOut size={18}/>
+                        className="flex md:hidden items-center gap-2 text-gray-400 hover:text-red-500 transition text-sm font-medium">
+                        <LogOut size={18} />
                     </button>
                 </div>
 
@@ -46,8 +46,8 @@ export default function Navbar() {
                 </div>
 
                 <button onClick={handleLogout}
-                        className="hidden md:flex items-center gap-2 text-gray-400 hover:text-red-500 transition text-sm font-medium">
-                    <LogOut size={16}/> ออกระบบ
+                    className="hidden md:flex items-center gap-2 text-gray-400 hover:text-red-500 transition text-sm font-medium">
+                    <LogOut size={16} /> ออกจากระบบ
                 </button>
             </div>
         </nav>
