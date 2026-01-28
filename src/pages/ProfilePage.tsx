@@ -192,7 +192,7 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600 flex justify-between">
                                 วันเกิด {formData.birthDate && <span
-                                    className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)}</span>}
+                                    className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)} ปี</span>}
                             </label>
                             <div className="relative">
                                 <input type="date" value={formData.birthDate}
