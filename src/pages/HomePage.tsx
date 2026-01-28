@@ -144,7 +144,7 @@ export default function HomePage() {
 
                     {isAuthenticated && !result && !processing && (
                         <div className="mt-12 text-center">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี, {user?.displayName?.split(' ')[0]}</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี {user?.displayName?.split(' ')[0]}</h2>
                             <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
                                 className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
