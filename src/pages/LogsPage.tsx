@@ -380,57 +380,59 @@ export default function LogsPage() {
                 )}
 
                 {/* --- History List --- */}
-                <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
-                    <div className="space-y-4">
-                        {(logs || []).map((log) => {
-                            if (!log || !log.createdAt) return null;
-                            const isActive = activeLog?.id === log.id;
+                {logs && logs.length > 0 && (
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
+                        <div className="space-y-4">
+                            {(logs || []).map((log) => {
+                                if (!log || !log.createdAt) return null;
+                                const isActive = activeLog?.id === log.id;
 
-                            const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
-                                const name = normalizeMetricName(s.name);
-                                const category = getCategory(name);
-                                return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
-                            }) || [];
+                                const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
+                                    const name = normalizeMetricName(s.name);
+                                    const category = getCategory(name);
+                                    return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
+                                }) || [];
 
-                            return (
-                                <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
-                                    <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
-                                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
-                                            <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
-                                                ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
-                                            </h3>
+                                return (
+                                    <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
+                                        <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
+                                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
+                                                <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
+                                                    ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
+                                                </h3>
 
-                                            <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
-                                            </p>
+                                                <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
+                                                </p>
 
-                                            {abnormalStats.length > 0 && (
-                                                <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
-                                                    <div className="flex items-center gap-1 whitespace-nowrap">
-                                                        <AlertCircle size={12} strokeWidth={3} />
-                                                        <span>ผิดปกติ {abnormalStats.length} :</span>
+                                                {abnormalStats.length > 0 && (
+                                                    <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
+                                                        <div className="flex items-center gap-1 whitespace-nowrap">
+                                                            <AlertCircle size={12} strokeWidth={3} />
+                                                            <span>ผิดปกติ {abnormalStats.length} :</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {abnormalStats.map((stat: any, i: number) => (
+                                                                <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                                                    {normalizeMetricName(stat.name)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {abnormalStats.map((stat: any, i: number) => (
-                                                            <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                                                {normalizeMetricName(stat.name)}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
+                                        <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
                                     </div>
-                                    <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
             </div>
         </div>
