@@ -210,7 +210,7 @@ export default function ProfilePage() {
                                     }}
                                     className={`w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${birthDateError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
                                     disabled={!isEditing} />
-                                <Calendar className="absolute left-4 top-4 text-gray-400" size={20} />
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
                             </div>
                             {birthDateError && <p className="text-red-500 text-sm pl-1">{birthDateError}</p>}
                         </div>
