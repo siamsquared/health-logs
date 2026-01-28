@@ -18,6 +18,7 @@ export default function ProfilePage() {
     // State to track if the image failed to load
     const [imageError, setImageError] = useState(false);
     const [phoneError, setPhoneError] = useState("");
+    const [birthDateError, setBirthDateError] = useState("");
 
     const calculateAge = (dateString: string) => {
         if (!dateString) return "-";
@@ -63,6 +64,12 @@ export default function ProfilePage() {
         // Validation
         if (formData.phoneNumber && !validatePhoneNumber(formData.phoneNumber)) {
             setPhoneError("เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0 และมี 10 หลัก");
+            return;
+        }
+
+        const today = new Date().toISOString().split("T")[0];
+        if (formData.birthDate && formData.birthDate > today) {
+            setBirthDateError("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
             return;
         }
 
@@ -117,6 +124,7 @@ export default function ProfilePage() {
         resetForm();
         setIsEditing(false);
         setPhoneError("");
+        setBirthDateError("");
     };
 
     if (status === "loading" || !user) return <div className="p-10 text-center text-gray-400">Loading...</div>;
@@ -133,7 +141,7 @@ export default function ProfilePage() {
                     <p className="text-gray-500 mt-2">ตั้งค่าข้อมูลพื้นฐาน</p>
                 </div>
 
-                <form onSubmit={handleSubmit}
+                <form onSubmit={handleSubmit} noValidate
                     className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-8">
                     <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
 
@@ -188,11 +196,23 @@ export default function ProfilePage() {
                             </label>
                             <div className="relative">
                                 <input type="date" value={formData.birthDate}
-                                    onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                                    className="w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    max={new Date().toISOString().split("T")[0]}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setFormData({ ...formData, birthDate: value });
+
+                                        const today = new Date().toISOString().split("T")[0];
+                                        if (value && value > today) {
+                                            setBirthDateError("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
+                                        } else {
+                                            setBirthDateError("");
+                                        }
+                                    }}
+                                    className={`w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${birthDateError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
                                     disabled={!isEditing} />
                                 <Calendar className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>
+                            {birthDateError && <p className="text-red-500 text-sm pl-1">{birthDateError}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">เพศ</label>
