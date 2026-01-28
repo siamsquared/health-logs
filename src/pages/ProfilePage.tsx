@@ -167,14 +167,15 @@ export default function ProfilePage() {
                             <label className="text-sm font-medium text-gray-600">เบอร์มือถือ</label>
                             <input type="tel" value={formData.phoneNumber}
                                 onChange={e => {
-                                    const value = e.target.value;
-                                    // Allow only numbers
-                                    if (!/^\d*$/.test(value)) return;
+                                    // Remove hyphens and other non-digit characters
+                                    const digitValue = e.target.value.replace(/\D/g, "");
 
-                                    setFormData({ ...formData, phoneNumber: value });
+                                    // Limit to 10 digits
+                                    const cappedValue = digitValue.slice(0, 10);
+
+                                    setFormData({ ...formData, phoneNumber: cappedValue });
                                     if (phoneError) setPhoneError("");
                                 }}
-                                maxLength={10}
                                 placeholder="0xxxxxxxxx"
                                 className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${phoneError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
                                 disabled={!isEditing} />
