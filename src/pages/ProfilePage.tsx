@@ -19,6 +19,8 @@ export default function ProfilePage() {
     const [imageError, setImageError] = useState(false);
     const [phoneError, setPhoneError] = useState("");
     const [birthDateError, setBirthDateError] = useState("");
+    const [weightError, setWeightError] = useState("");
+    const [heightError, setHeightError] = useState("");
 
     const calculateAge = (dateString: string) => {
         if (!dateString) return "-";
@@ -62,26 +64,44 @@ export default function ProfilePage() {
         if (!user) return;
 
         // Validation
-        if (formData.phoneNumber && !validatePhoneNumber(formData.phoneNumber)) {
+        let hasError = false;
+
+        if (!formData.phoneNumber) {
+            setPhoneError("กรุณาระบุเบอร์มือถือ");
+            hasError = true;
+        } else if (!validatePhoneNumber(formData.phoneNumber)) {
             setPhoneError("เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0 และมี 10 หลัก");
-            return;
+            hasError = true;
         }
 
-        const today = new Date().toISOString().split("T")[0];
-        if (formData.birthDate && formData.birthDate > today) {
-            setBirthDateError("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
-            return;
+        if (!formData.birthDate) {
+            setBirthDateError("กรุณาระบุวันเกิด");
+            hasError = true;
+        } else {
+            const today = new Date().toISOString().split("T")[0];
+            if (formData.birthDate > today) {
+                setBirthDateError("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
+                hasError = true;
+            }
         }
 
-        if (formData.weight && Number(formData.weight) <= 0) {
-            alert("น้ำหนักต้องมากกว่า 0");
-            return;
+        if (!formData.weight) {
+            setWeightError("กรุณาระบุน้ำหนัก");
+            hasError = true;
+        } else if (Number(formData.weight) <= 0) {
+            setWeightError("น้ำหนักต้องมากกว่า 0");
+            hasError = true;
         }
 
-        if (formData.height && Number(formData.height) <= 0) {
-            alert("ส่วนสูงต้องมากกว่า 0");
-            return;
+        if (!formData.height) {
+            setHeightError("กรุณาระบุส่วนสูง");
+            hasError = true;
+        } else if (Number(formData.height) <= 0) {
+            setHeightError("ส่วนสูงต้องมากกว่า 0");
+            hasError = true;
         }
+
+        if (hasError) return;
 
         setSaving(true);
         const payload = {
@@ -125,6 +145,8 @@ export default function ProfilePage() {
         setIsEditing(false);
         setPhoneError("");
         setBirthDateError("");
+        setWeightError("");
+        setHeightError("");
     };
 
     if (status === "loading" || !user) return <div className="p-10 text-center text-gray-400">Loading...</div>;
@@ -238,9 +260,11 @@ export default function ProfilePage() {
                                     if (val === "" || Number(val) > 0) {
                                         setFormData({ ...formData, weight: val });
                                     }
+                                    if (weightError) setWeightError("");
                                 }}
-                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${weightError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
                                 disabled={!isEditing} />
+                            {weightError && <p className="text-red-500 text-sm pl-1">{weightError}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600">ส่วนสูง (cm)</label>
@@ -253,9 +277,11 @@ export default function ProfilePage() {
                                     if (val === "" || Number(val) > 0) {
                                         setFormData({ ...formData, height: val });
                                     }
+                                    if (heightError) setHeightError("");
                                 }}
-                                className="w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className={`w-full p-4 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${heightError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
                                 disabled={!isEditing} />
+                            {heightError && <p className="text-red-500 text-sm pl-1">{heightError}</p>}
                         </div>
                     </div>
 
