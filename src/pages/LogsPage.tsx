@@ -332,7 +332,7 @@ export default function LogsPage() {
                                             <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14} /></button>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM YYYY')}</span>
+                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
                                     )}
                                 </div>
                             </div>
