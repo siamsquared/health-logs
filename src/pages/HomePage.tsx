@@ -66,40 +66,41 @@ export default function HomePage() {
         };
 
         try {
+            const uploadedUrls: string[] = [];
+
+            // Upload all files first
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const currentIndex = i + 1;
-
-                setProcessingStatus(`กำลังประมวลผลไฟล์ที่ ${currentIndex}/${files.length}: ${file.name}`);
+                setProcessingStatus(`กำลังอัปโหลดไฟล์ที่ ${i + 1}/${files.length}: ${file.name}`);
 
                 const storageRef = ref(storage, `reports/${user.uid}/${Date.now()}_${file.name}`);
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
-
-                // Call Client-side Service
-                const data = await analyzeImage(url, profileData);
-
-                const reportId = Date.now().toString();
-                const nowTimestamp = Timestamp.now();
-
-                await setDoc(doc(db, "users", user.uid, "reports", reportId), {
-                    imageUrl: url,
-                    analysis: data,
-                    createdAt: nowTimestamp,
-                    status: 1
-                });
-
-                if (i === files.length - 1) {
-                    setResult(data);
-                }
+                uploadedUrls.push(url);
             }
+
+            // Analyze all images in one go
+            setProcessingStatus(`กำลังประมวลผลข้อมูลจาก ${files.length} รูปภาพ...`);
+            const data = await analyzeImage(uploadedUrls, profileData);
+
+            const reportId = Date.now().toString();
+            const nowTimestamp = Timestamp.now();
+
+            await setDoc(doc(db, "users", user.uid, "reports", reportId), {
+                imageUrl: uploadedUrls[0], // Use first image as representative
+                imageUrls: uploadedUrls,    // Store all URLs
+                analysis: data,
+                createdAt: nowTimestamp,
+                status: 1
+            });
+
+            setResult(data);
         } catch (error) {
             console.error(error);
             alert("เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setProcessing(false);
             setProcessingStatus("");
-            // Clear input
             e.target.value = "";
         }
     };

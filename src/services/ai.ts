@@ -48,8 +48,9 @@ const STANDARD_CRITERIA = JSON.stringify({
     ]
 });
 
-export async function analyzeImage(imageUrl: string, profile: any) {
+export async function analyzeImage(imageUrls: string | string[], profile: any) {
     try {
+        const urls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
         const profileText = profile
             ? `
       *** ข้อมูลส่วนตัวของผู้ตรวจ (Profile) ***
@@ -64,6 +65,9 @@ export async function analyzeImage(imageUrl: string, profile: any) {
       คุณคือผู้เชี่ยวชาญด้านเทคนิคการแพทย์และสุขภาพ หน้าที่ของคุณคือวิเคราะห์รูปภาพผลตรวจสุขภาพ (Lab Report)
       และแปลงข้อมูลเป็น JSON ตามโครงสร้างที่กำหนด โดยยึด "เกณฑ์มาตรฐาน" (STANDARD_CRITERIA) และ "ข้อมูลส่วนตัว" (Profile) ของผู้ตรวจประกอบการวิเคราะห์
       
+      *** สำคัญ: ฉันส่งรูปภาพให้คุณ ${urls.length} รูป โปรดรวบรวมข้อมูลจากทุกรูปมาไว้ใน Report เดียวกัน ***
+      หากพบรายการตรวจเดียวกันในหลายรูป ให้เลือกค่าที่สมบูรณ์ที่สุด หรือค่าล่าสุด (ถ้ามีวันที่ระบุในภาพ)
+
       ${profileText}
 
       *** 1. เกณฑ์มาตรฐาน (STANDARD_CRITERIA) ***
@@ -126,7 +130,7 @@ export async function analyzeImage(imageUrl: string, profile: any) {
                     role: "user",
                     content: [
                         { type: "text", text: prompt },
-                        { type: "image_url", image_url: { url: imageUrl } },
+                        ...urls.map(url => ({ type: "image_url", image_url: { url } } as const)),
                     ],
                 },
             ],
