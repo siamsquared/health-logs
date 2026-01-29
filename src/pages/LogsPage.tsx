@@ -51,7 +51,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
 
     const allMetricNames = Array.from(new Set(
         compareLogs.flatMap(log =>
-            log.analysis.health_stats?.map((s:any) => normalizeMetricName(s.name)) || []
+            log.analysis.health_stats?.map((s: any) => normalizeMetricName(s.name)) || []
         )
     ));
 
@@ -79,68 +79,68 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-sm text-left border-collapse whitespace-nowrap">
                     <thead>
-                    <tr className="bg-white border-b border-gray-100">
-                        {/* Sticky Header Column */}
-                        <th className="py-4 pl-6 pr-4 font-bold text-gray-900 min-w-[160px] sticky left-0 bg-white z-20 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] border-r border-gray-50">
-                            รายการตรวจ
-                        </th>
-                        {compareLogs.map((log, i) => (
-                            <th key={log.id} className={`py-4 px-6 font-bold min-w-[140px] text-center align-middle ${i===0 ? 'bg-blue-50/30 text-blue-900' : 'text-gray-400'}`}>
-                                <div className="flex flex-col items-center">
-                                    <span className="text-xs uppercase tracking-wider mb-1 opacity-70">{i === 0 ? 'ล่าสุด' : 'ย้อนหลัง'}</span>
-                                    <span className="text-sm">{formatDate(log.createdAt, 'D MMM BB')}</span>
-                                </div>
+                        <tr className="bg-white border-b border-gray-100">
+                            {/* Sticky Header Column */}
+                            <th className="py-4 pl-6 pr-4 font-bold text-gray-900 min-w-[160px] sticky left-0 bg-white z-20 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] border-r border-gray-50">
+                                รายการตรวจ
                             </th>
-                        ))}
-                    </tr>
+                            {compareLogs.map((log, i) => (
+                                <th key={log.id} className={`py-4 px-6 font-bold min-w-[140px] text-center align-middle ${i === 0 ? 'bg-blue-50/30 text-blue-900' : 'text-gray-400'}`}>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs uppercase tracking-wider mb-1 opacity-70">{i === 0 ? 'ล่าสุด' : 'ย้อนหลัง'}</span>
+                                        <span className="text-sm">{formatDate(log.createdAt, 'D MMM BB')}</span>
+                                    </div>
+                                </th>
+                            ))}
+                        </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                    {Object.entries(groupedMetrics).map(([category, metrics]) => (
-                        <>
-                            {/* Sticky Category */}
-                            <tr key={category} className="bg-black">
-                                <td className="py-3 px-6 text-sm font-bold text-white sticky left-0 z-30 bg-black border-r border-gray-800 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.5)]">
-                                    {category}
-                                </td>
-                                {/* Fill rest with black */}
-                                <td colSpan={compareLogs.length} className="bg-black"></td>
-                            </tr>
+                        {Object.entries(groupedMetrics).map(([category, metrics]) => (
+                            <>
+                                {/* Sticky Category */}
+                                <tr key={category} className="bg-black">
+                                    <td className="py-3 px-6 text-sm font-bold text-white sticky left-0 z-30 bg-black border-r border-gray-800 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.5)]">
+                                        {category}
+                                    </td>
+                                    {/* Fill rest with black */}
+                                    <td colSpan={compareLogs.length} className="bg-black"></td>
+                                </tr>
 
-                            {metrics.sort().map((metricName: string) => {
-                                const refRange = compareLogs.flatMap(log => log.analysis.health_stats || [])
-                                    .find((s:any) => normalizeMetricName(s.name) === metricName)?.ref_range;
+                                {metrics.sort().map((metricName: string) => {
+                                    const refRange = compareLogs.flatMap(log => log.analysis.health_stats || [])
+                                        .find((s: any) => normalizeMetricName(s.name) === metricName)?.ref_range;
 
-                                return (
-                                    <tr key={metricName} className="hover:bg-gray-50/50 transition group">
-                                        {/* Sticky Row Title */}
-                                        <td className="py-4 pl-6 pr-4 bg-white group-hover:bg-gray-50/50 sticky left-0 z-10 border-r border-gray-50 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
-                                            <div className="font-medium text-gray-700">{metricName}</div>
-                                            {refRange && (
-                                                <div className="text-[10px] text-gray-400 font-light mt-0.5">
-                                                    เกณฑ์: {refRange}
-                                                </div>
-                                            )}
-                                        </td>
-                                        {compareLogs.map((log, i) => {
-                                            const stat = log.analysis.health_stats?.find((s:any) => normalizeMetricName(s.name) === metricName);
-                                            const isNormal = stat?.status === 'ปกติ';
-                                            const isNA = !stat || stat.value === 'N/A';
+                                    return (
+                                        <tr key={metricName} className="hover:bg-gray-50/50 transition group">
+                                            {/* Sticky Row Title */}
+                                            <td className="py-4 pl-6 pr-4 bg-white group-hover:bg-gray-50/50 sticky left-0 z-10 border-r border-gray-50 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
+                                                <div className="font-medium text-gray-700">{metricName}</div>
+                                                {refRange && (
+                                                    <div className="text-[10px] text-gray-400 font-light mt-0.5">
+                                                        เกณฑ์: {refRange}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            {compareLogs.map((log, i) => {
+                                                const stat = log.analysis.health_stats?.find((s: any) => normalizeMetricName(s.name) === metricName);
+                                                const isNormal = stat?.status === 'ปกติ';
+                                                const isNA = !stat || stat.value === 'N/A';
 
-                                            return (
-                                                <td key={log.id} className={`py-4 px-6 text-center align-middle ${i===0 ? 'bg-blue-50/10' : ''}`}>
-                                                    {stat && !isNA ? (
-                                                        <TableValueDisplay valueStr={stat.value} isNormal={isNormal} />
-                                                    ) : (
-                                                        <span className="text-gray-300 text-lg">-</span>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </>
-                    ))}
+                                                return (
+                                                    <td key={log.id} className={`py-4 px-6 text-center align-middle ${i === 0 ? 'bg-blue-50/10' : ''}`}>
+                                                        {stat && !isNA ? (
+                                                            <TableValueDisplay valueStr={stat.value} isNormal={isNormal} />
+                                                        ) : (
+                                                            <span className="text-gray-300 text-lg">-</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+                            </>
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -164,7 +164,7 @@ export default function LogsPage() {
     const [editDate, setEditDate] = useState("");
 
     useEffect(() => { if (authStatus === "unauthenticated") navigate({ to: "/" }); }, [authStatus, navigate]);
-    
+
     // Auto-select first log logic
     const activeLog = useMemo(() => {
         if (!logs || logs.length === 0) return null;
@@ -196,7 +196,7 @@ export default function LogsPage() {
 
         const series = Array.from(metricSet).map(metricName => {
             const data = sortedLogs.map(log => {
-                const stat = log.analysis.health_stats?.find((s:any) => normalizeMetricName(s.name) === metricName);
+                const stat = log.analysis.health_stats?.find((s: any) => normalizeMetricName(s.name) === metricName);
                 if (stat && stat.value && stat.value !== 'N/A') {
                     const numValue = parseFloat(stat.value.replace(/[^0-9.]/g, ''));
                     return isNaN(numValue) ? null : numValue;
@@ -210,9 +210,9 @@ export default function LogsPage() {
             };
         });
 
-        const pastelColors = [
-            '#A0C4FF', '#FFADAD', '#CAFFBF', '#FDFFB6', '#BDB2FF',
-            '#FFC6FF', '#9BF6FF', '#FFD6A5', '#E4C1F9', '#D0F4DE'
+        const standardColors = [
+            '#2563EB', '#DC2626', '#16A34A', '#EA580C', '#9333EA',
+            '#DB2777', '#0891B2', '#EAB308', '#4F46E5', '#0D9488'
         ];
 
         return {
@@ -283,7 +283,7 @@ export default function LogsPage() {
                     lineWidth: 3
                 }
             },
-            colors: pastelColors,
+            colors: standardColors,
             credits: { enabled: false },
             legend: {
                 itemStyle: { color: '#4B5563', fontWeight: 'normal', fontSize: '11px' },
@@ -295,16 +295,23 @@ export default function LogsPage() {
 
     const handleSelectLog = (logId: string) => { setActiveLogId(logId); setIsEditing(false); setActiveTab('detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const startEdit = () => { if (!activeLog?.createdAt) return; setActiveLogId(activeLog.id); setEditDate(new Date(activeLog.createdAt).toLocaleDateString('en-CA')); setIsEditing(true); };
-    
-    const saveDate = async () => { 
-        if (!user || !editDate || !activeLog) return; 
+
+    const saveDate = async () => {
+        if (!user || !editDate || !activeLog) return;
+
+        const today = new Date().toLocaleDateString('en-CA');
+        if (editDate > today) {
+            alert("วันที่ต้องไม่เป็นวันที่ในอนาคต");
+            return;
+        }
+
         updateLogDateMutation.mutate({ userId: user.uid, logId: activeLog.id, newDate: new Date(editDate).getTime() });
-        setIsEditing(false); 
+        setIsEditing(false);
     };
-    
-    const handleDelete = async () => { 
-        if (!confirm("ยืนยันการลบ?")) return; 
-        if (!user || !activeLog) return; 
+
+    const handleDelete = async () => {
+        if (!confirm("ยืนยันการลบ?")) return;
+        if (!user || !activeLog) return;
         deleteLogMutation.mutate({ userId: user.uid, logId: activeLog.id });
     };
 
@@ -324,22 +331,22 @@ export default function LogsPage() {
                             <div>
                                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">ผลการตรวจ</h1>
                                 <div className="mt-2 flex items-center gap-3">
-                                    <Clock size={16} className="text-gray-500"/>
+                                    <Clock size={16} className="text-gray-500" />
                                     {isEditing ? (
                                         <div className="flex items-center gap-2 animate-fade-in">
-                                            <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none" />
-                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition"><Save size={14}/></button>
-                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14}/></button>
+                                            <input type="date" value={editDate} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setEditDate(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none" />
+                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition"><Save size={14} /></button>
+                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14} /></button>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM YYYY')}</span>
+                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
                                     )}
                                 </div>
                             </div>
-                            {!isEditing && (
+                            {!isEditing && activeTab === 'detail' && (
                                 <div className="flex gap-2">
-                                    <button onClick={startEdit} className="p-2 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-black transition shadow-sm"><Edit2 size={16}/></button>
-                                    <button onClick={handleDelete} className="p-2 bg-red-50 border border-red-100 text-red-500 rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"><Trash2 size={16}/></button>
+                                    <button onClick={startEdit} className="p-2 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-black transition shadow-sm"><Edit2 size={16} /></button>
+                                    <button onClick={handleDelete} className="p-2 bg-red-50 border border-red-100 text-red-500 rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"><Trash2 size={16} /></button>
                                 </div>
                             )}
                         </div>
@@ -348,8 +355,8 @@ export default function LogsPage() {
 
                 {/* Tab Menu */}
                 <div className="bg-gray-200/50 p-1 rounded-2xl flex gap-1 mb-8 max-w-md">
-                    <button onClick={() => setActiveTab('detail')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'detail' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><LayoutGrid size={16}/> รายละเอียด</button>
-                    <button onClick={() => setActiveTab('compare')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'compare' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><BarChart2 size={16}/> เปรียบเทียบ</button>
+                    <button onClick={() => setActiveTab('detail')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'detail' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><LayoutGrid size={16} /> รายละเอียด</button>
+                    <button onClick={() => setActiveTab('compare')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'compare' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><BarChart2 size={16} /> เปรียบเทียบ</button>
                 </div>
 
                 {/* Content */}
@@ -362,7 +369,7 @@ export default function LogsPage() {
                                 {((logs || []).length > 1) && (
                                     <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-gray-100">
                                         <div className="flex items-center gap-2 mb-6">
-                                            <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20}/></div>
+                                            <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20} /></div>
                                             <h2 className="font-bold text-lg text-gray-800">แนวโน้มสุขภาพ</h2>
                                         </div>
                                         <div className="w-full">
@@ -376,62 +383,64 @@ export default function LogsPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="text-center py-20 text-gray-400 bg-white rounded-[2rem] border border-dashed border-gray-200 mb-12">ยังไม่มีข้อมูลประวัติการตรวจ</div>
+                    <div className="text-center py-20 text-gray-400 bg-white rounded-[2rem] border border-dashed border-gray-200 mb-12">ยังไม่มีข้อมูลประวัติการตรวจสุขภาพ</div>
                 )}
 
                 {/* --- History List --- */}
-                <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
-                    <div className="space-y-4">
-                        {(logs || []).map((log) => {
-                            if (!log || !log.createdAt) return null;
-                            const isActive = activeLog?.id === log.id;
+                {logs && logs.length > 0 && (
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
+                        <div className="space-y-4">
+                            {(logs || []).map((log) => {
+                                if (!log || !log.createdAt) return null;
+                                const isActive = activeLog?.id === log.id;
 
-                            const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
-                                const name = normalizeMetricName(s.name);
-                                const category = getCategory(name);
-                                return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
-                            }) || [];
+                                const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
+                                    const name = normalizeMetricName(s.name);
+                                    const category = getCategory(name);
+                                    return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
+                                }) || [];
 
-                            return (
-                                <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
-                                    <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
-                                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
-                                            <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
-                                                ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
-                                            </h3>
+                                return (
+                                    <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
+                                        <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
+                                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
+                                                <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
+                                                    ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
+                                                </h3>
 
-                                            <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
-                                            </p>
+                                                <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
+                                                </p>
 
-                                            {abnormalStats.length > 0 && (
-                                                <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
-                                                    <div className="flex items-center gap-1 whitespace-nowrap">
-                                                        <AlertCircle size={12} strokeWidth={3} />
-                                                        <span>ผิดปกติ {abnormalStats.length} :</span>
+                                                {abnormalStats.length > 0 && (
+                                                    <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
+                                                        <div className="flex items-center gap-1 whitespace-nowrap">
+                                                            <AlertCircle size={12} strokeWidth={3} />
+                                                            <span>ผิดปกติ {abnormalStats.length} :</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {abnormalStats.map((stat: any, i: number) => (
+                                                                <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                                                    {normalizeMetricName(stat.name)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {abnormalStats.map((stat:any, i:number) => (
-                                                            <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                                    {normalizeMetricName(stat.name)}
-                                                </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
+                                        <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
                                     </div>
-                                    <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
-                                </div>
-                            )})}
-                    </div>
-                </div>
-
-            </div>
-        </div>
+                                )
+                            })}
+                        </div >
+                    </div >
+                )}
+            </div >
+        </div >
     );
 }
