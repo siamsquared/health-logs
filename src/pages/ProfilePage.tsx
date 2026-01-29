@@ -1,11 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { useAuth } from "@/features/auth/useAuth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import { Save, Loader2, Calendar, Edit2, X, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { differenceInYears, parseISO } from "date-fns";
+import { differenceInYears, parseISO, format, isValid } from "date-fns";
+import { th } from "date-fns/locale";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale("th", th);
+
+const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
+    const [displayValue, setDisplayValue] = useState(value || "");
+
+    useEffect(() => {
+        setDisplayValue(value || "");
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
+        if (input.length > 4) {
+            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
+        } else if (input.length > 2) {
+            input = `${input.slice(0, 2)}/${input.slice(2)}`;
+        }
+        setDisplayValue(input);
+
+        // Pass to DatePicker's onChange
+        const originalValue = e.target.value;
+        e.target.value = input;
+        onChange(e);
+        e.target.value = originalValue;
+    };
+
+    return (
+        <input
+            ref={ref}
+            value={displayValue}
+            onClick={onClick}
+            onChange={handleChange}
+            className={className}
+            disabled={disabled}
+            placeholder={placeholder}
+            autoComplete="off"
+        />
+    );
+});
 
 export default function ProfilePage() {
     const { user, status } = useAuth();
@@ -131,7 +173,7 @@ export default function ProfilePage() {
             await setDoc(doc(db, "users", user.uid), userPayload, { merge: true });
             // AuthContext listens to onSnapshot, so local user state will update automatically.
             alert("บันทึกเรียบร้อย");
-            
+
             // Only reopen the review page (home) the first time profile is set up
             if (!user.isProfileSetup) {
                 navigate({ to: '/' });
@@ -217,26 +259,44 @@ export default function ProfilePage() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-600 flex justify-between">
-                                วันเกิด {formData.birthDate && <span
-                                    className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)} ปี</span>}
+                                วันเกิด {formData.birthDate && <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">อายุ {calculateAge(formData.birthDate)} ปี</span>}
                             </label>
                             <div className="relative">
-                                <input type="date" value={formData.birthDate}
-                                    max={new Date().toISOString().split("T")[0]}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setFormData({ ...formData, birthDate: value });
+                                <DatePicker
+                                    selected={formData.birthDate ? parseISO(formData.birthDate) : null}
+                                    onChange={(date: Date | null, event?: React.SyntheticEvent<any>) => {
+                                        if (date && isValid(date)) {
+                                            const year = date.getFullYear();
+                                            // Only update state if it's a "complete" year (e.g. > 1000) 
+                                            // or if it was picked via calendar (event is undefined or clicks)
+                                            // This prevents "1" becoming "0001" or "2001" prematurely.
+                                            const isCompleteTyped = event && (event.target as HTMLInputElement).value?.length === 10;
+                                            const isPicked = !event; // Calendar clicks usually don't have the same event structure
 
-                                        const today = new Date().toISOString().split("T")[0];
-                                        if (value && value > today) {
-                                            setBirthDateError("วันเกิดต้องไม่เป็นวันที่ในอนาคต");
-                                        } else {
-                                            setBirthDateError("");
+                                            if (isPicked || isCompleteTyped || year > 1900) {
+                                                const value = format(date, "yyyy-MM-dd");
+                                                setFormData({ ...formData, birthDate: value });
+                                                setBirthDateError("");
+                                            }
+                                        }
+                                        else if (event) {
+                                            const target = event.target as HTMLInputElement;
+                                            if (target.value === "") {
+                                                setFormData({ ...formData, birthDate: "" });
+                                            }
                                         }
                                     }}
+                                    maxDate={new Date()}
+                                    disabled={!isEditing}
+                                    dateFormat="dd/MM/yyyy"
+                                    placeholderText="วว/ดด/ปปปป"
+                                    locale="th"
+                                    autoComplete="off"
                                     className={`w-full p-4 pl-12 bg-gray-50 border-transparent focus:bg-white border focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 ${birthDateError ? "border-red-500 focus:border-red-500" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
-                                    disabled={!isEditing} />
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                                    wrapperClassName="w-full"
+                                    customInput={<CustomDateInput />}
+                                />
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" size={20} />
                             </div>
                             {birthDateError && <p className="text-red-500 text-sm pl-1">{birthDateError}</p>}
                         </div>
