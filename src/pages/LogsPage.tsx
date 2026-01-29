@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, forwardRef } from "react";
 import { useAuth } from "@/features/auth/useAuth";
 import { useHealthLogs, useUpdateLogDate, useDeleteLog } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
@@ -6,6 +6,49 @@ import AnalysisResult, { normalizeMetricName } from "@/components/AnalysisResult
 import { TrendingUp, ChevronRight, Clock, Trash2, Edit2, Save, X, LayoutGrid, BarChart2, AlertCircle } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { formatDate } from "@/lib/date";
+import { parseISO, format, isValid } from "date-fns";
+import { th } from "date-fns/locale";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale("th", th);
+
+const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
+    const [displayValue, setDisplayValue] = useState(value || "");
+
+    useEffect(() => {
+        setDisplayValue(value || "");
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
+        if (input.length > 4) {
+            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
+        } else if (input.length > 2) {
+            input = `${input.slice(0, 2)}/${input.slice(2)}`;
+        }
+        setDisplayValue(input);
+
+        // Pass to DatePicker's onChange
+        const originalValue = e.target.value;
+        e.target.value = input;
+        onChange(e);
+        e.target.value = originalValue;
+    };
+
+    return (
+        <input
+            ref={ref}
+            value={displayValue}
+            onClick={onClick}
+            onChange={handleChange}
+            className={className}
+            disabled={disabled}
+            placeholder={placeholder}
+            autoComplete="off"
+        />
+    );
+});
 
 // --- Highcharts Imports ---
 import Highcharts from 'highcharts';
@@ -334,9 +377,32 @@ export default function LogsPage() {
                                     <Clock size={16} className="text-gray-500" />
                                     {isEditing ? (
                                         <div className="flex items-center gap-2 animate-fade-in">
-                                            <input type="date" value={editDate} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setEditDate(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none" />
-                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition"><Save size={14} /></button>
-                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition"><X size={14} /></button>
+                                            <DatePicker
+                                                selected={editDate ? parseISO(editDate) : null}
+                                                onChange={(date: Date | null, event?: React.SyntheticEvent<any>) => {
+                                                    if (date && isValid(date)) {
+                                                        const year = date.getFullYear();
+                                                        const isCompleteTyped = event && (event.target as HTMLInputElement).value?.length === 10;
+                                                        const isPicked = !event;
+                                                        if (isPicked || isCompleteTyped || year > 1900) {
+                                                            setEditDate(format(date, "yyyy-MM-dd"));
+                                                        }
+                                                    } else if (event) {
+                                                        const target = event.target as HTMLInputElement;
+                                                        if (target.value === "") setEditDate("");
+                                                    }
+                                                }}
+                                                maxDate={new Date()}
+                                                dateFormat="dd/MM/yyyy"
+                                                placeholderText="วว/ดด/ปปปป"
+                                                locale="th"
+                                                autoComplete="off"
+                                                className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none w-32"
+                                                customInput={<CustomDateInput />}
+                                                portalId="root"
+                                            />
+                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition flex-shrink-0"><Save size={14} /></button>
+                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition flex-shrink-0"><X size={14} /></button>
                                         </div>
                                     ) : (
                                         <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
