@@ -102,7 +102,6 @@ export default function HomePage() {
             const nowTimestamp = Timestamp.now();
 
             await setDoc(doc(db, "users", user.uid, "reports", reportId), {
-                imageUrl: uploadedUrls[0], // Use first image as representative
                 imageUrls: uploadedUrls,    // Store all URLs
                 analysis: data,
                 createdAt: nowTimestamp,

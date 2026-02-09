@@ -2,6 +2,8 @@ import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
 export interface AnalysisData {
+    hospitalName?: string;
+    examinationDate?: string;
     summary: string;
     health_stats: Array<{
         name: string;
@@ -14,7 +16,8 @@ export interface AnalysisData {
 
 export interface HealthLog {
     id: string;
-    imageUrl: string;
+    imageUrl: string; // Keep for backward compatibility
+    imageUrls?: string[]; // New field for multiple images
     analysis: AnalysisData;
     createdAt: number;
     status: number;
@@ -34,7 +37,8 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
             if (data.status !== 0) {
                 logs.push({
                     id: doc.id,
-                    imageUrl: data.imageUrl,
+                    imageUrl: data.imageUrl || data.imageUrls?.[0] || '', // Use first image from array if imageUrl not present
+                    imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
                     status: data.status
@@ -55,10 +59,16 @@ export const deleteLog = async (userId: string, logId: string) => {
 
 export const updateLogDate = async (userId: string, logId: string, newDate: number) => {
     const logRef = doc(db, "users", userId, "reports", logId);
-    // Firestore stores timestamps often, but here we update createdAt.
-    // Ensure consistency with how you store it (millis or Timestamp).
-    // Previous logic seemed to use millis for local state but maybe Timestamp for Firestore?
-    // Let's stick to updateDoc. If existing data uses Timestamp, we might need to convert.
-    // For now, assuming standard update.
-    await updateDoc(logRef, { createdAt: newDate }); 
+
+    // Convert newDate (timestamp) to DD/MM/YYYY string for analysis.examinationDate
+    const dateObj = new Date(newDate);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const dateString = `${day}/${month}/${year}`;
+
+    await updateDoc(logRef, {
+        createdAt: newDate,
+        "analysis.examinationDate": dateString
+    });
 };

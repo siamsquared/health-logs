@@ -1,54 +1,11 @@
-import { useEffect, useState, useMemo, forwardRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/features/auth/useAuth";
-import { useHealthLogs, useUpdateLogDate, useDeleteLog } from "@/features/health/queries";
+import { useHealthLogs } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
 import AnalysisResult, { normalizeMetricName } from "@/components/AnalysisResult";
-import { TrendingUp, ChevronRight, Clock, Trash2, Edit2, Save, X, LayoutGrid, BarChart2, AlertCircle } from "lucide-react";
+import { TrendingUp, ChevronDown, Clock, LayoutGrid, BarChart2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { formatDate } from "@/lib/date";
-import { parseISO, format, isValid } from "date-fns";
-import { th } from "date-fns/locale";
-import DatePicker, { registerLocale } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
-registerLocale("th", th);
-
-const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
-    const [displayValue, setDisplayValue] = useState(value || "");
-
-    useEffect(() => {
-        setDisplayValue(value || "");
-    }, [value]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
-        if (input.length > 4) {
-            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
-        } else if (input.length > 2) {
-            input = `${input.slice(0, 2)}/${input.slice(2)}`;
-        }
-        setDisplayValue(input);
-
-        // Pass to DatePicker's onChange
-        const originalValue = e.target.value;
-        e.target.value = input;
-        onChange(e);
-        e.target.value = originalValue;
-    };
-
-    return (
-        <input
-            ref={ref}
-            value={displayValue}
-            onClick={onClick}
-            onChange={handleChange}
-            className={className}
-            disabled={disabled}
-            placeholder={placeholder}
-            autoComplete="off"
-        />
-    );
-});
+import { formatDate, formatDateTime, formatRelativeTime } from "@/lib/date";
 
 // --- Highcharts Imports ---
 import Highcharts from 'highcharts';
@@ -131,7 +88,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                                 <th key={log.id} className={`py-4 px-6 font-bold min-w-[140px] text-center align-middle ${i === 0 ? 'bg-blue-50/30 text-blue-900' : 'text-gray-400'}`}>
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs uppercase tracking-wider mb-1 opacity-70">{i === 0 ? 'ล่าสุด' : 'ย้อนหลัง'}</span>
-                                        <span className="text-sm">{formatDate(log.createdAt, 'D MMM BB')}</span>
+                                        <span className="text-sm">{formatDate(log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A' ? log.analysis.examinationDate : log.createdAt, 'D MMM BBBB')}</span>
                                     </div>
                                 </th>
                             ))}
@@ -196,15 +153,11 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
 export default function LogsPage() {
     const { user, status: authStatus } = useAuth();
     const { data: logs, isLoading: logsLoading } = useHealthLogs(user?.uid);
-    const deleteLogMutation = useDeleteLog();
-    const updateLogDateMutation = useUpdateLogDate();
 
     const navigate = useNavigate();
 
     const [activeLogId, setActiveLogId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'detail' | 'compare'>('detail');
-    const [isEditing, setIsEditing] = useState(false);
-    const [editDate, setEditDate] = useState("");
 
     useEffect(() => { if (authStatus === "unauthenticated") navigate({ to: "/" }); }, [authStatus, navigate]);
 
@@ -223,7 +176,12 @@ export default function LogsPage() {
         if (!logs || logs.length === 0) return {};
 
         const sortedLogs = [...logs].sort((a, b) => a.createdAt - b.createdAt);
-        const categories = sortedLogs.map(log => formatDate(log.createdAt, 'D MMM BB'));
+        const categories = sortedLogs.map(log => {
+            const dateValue = log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A'
+                ? log.analysis.examinationDate
+                : log.createdAt;
+            return formatDate(dateValue, 'D MMM BBBB');
+        });
 
         const metricSet = new Set<string>();
         sortedLogs.forEach(log => {
@@ -336,27 +294,7 @@ export default function LogsPage() {
         };
     }, [logs]);
 
-    const handleSelectLog = (logId: string) => { setActiveLogId(logId); setIsEditing(false); setActiveTab('detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-    const startEdit = () => { if (!activeLog?.createdAt) return; setActiveLogId(activeLog.id); setEditDate(new Date(activeLog.createdAt).toLocaleDateString('en-CA')); setIsEditing(true); };
-
-    const saveDate = async () => {
-        if (!user || !editDate || !activeLog) return;
-
-        const today = new Date().toLocaleDateString('en-CA');
-        if (editDate > today) {
-            alert("วันที่ต้องไม่เป็นวันที่ในอนาคต");
-            return;
-        }
-
-        updateLogDateMutation.mutate({ userId: user.uid, logId: activeLog.id, newDate: new Date(editDate).getTime() });
-        setIsEditing(false);
-    };
-
-    const handleDelete = async () => {
-        if (!confirm("ยืนยันการลบ?")) return;
-        if (!user || !activeLog) return;
-        deleteLogMutation.mutate({ userId: user.uid, logId: activeLog.id });
-    };
+    const handleSelectLog = (logId: string) => { setActiveLogId(logId); setActiveTab('detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
     if (authStatus === "loading" || logsLoading) return <div className="min-h-screen bg-[#F5F5F7]"><Navbar /><LogsSkeleton /></div>;
     if (!user) return null;
@@ -372,57 +310,71 @@ export default function LogsPage() {
                     <div className="mb-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold tracking-tight text-gray-900">ผลการตรวจ</h1>
-                                <div className="mt-2 flex items-center gap-3">
-                                    <Clock size={16} className="text-gray-500" />
-                                    {isEditing ? (
-                                        <div className="flex items-center gap-2 animate-fade-in">
-                                            <DatePicker
-                                                selected={editDate ? parseISO(editDate) : null}
-                                                onChange={(date: Date | null, event?: React.SyntheticEvent<any>) => {
-                                                    if (date && isValid(date)) {
-                                                        const year = date.getFullYear();
-                                                        const isCompleteTyped = event && (event.target as HTMLInputElement).value?.length === 10;
-                                                        const isPicked = !event;
-                                                        if (isPicked || isCompleteTyped || year > 1900) {
-                                                            setEditDate(format(date, "yyyy-MM-dd"));
-                                                        }
-                                                    } else if (event) {
-                                                        const target = event.target as HTMLInputElement;
-                                                        if (target.value === "") setEditDate("");
-                                                    }
-                                                }}
-                                                maxDate={new Date()}
-                                                dateFormat="dd/MM/yyyy"
-                                                placeholderText="วว/ดด/ปปปป"
-                                                locale="th"
-                                                autoComplete="off"
-                                                className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none w-32"
-                                                customInput={<CustomDateInput />}
-                                                portalId="root"
-                                            />
-                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition flex-shrink-0"><Save size={14} /></button>
-                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition flex-shrink-0"><X size={14} /></button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
-                                    )}
+                                <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-3">ผลการตรวจ</h1>
+
+                                <span className="text-gray-500">
+                                    📅 วันที่รับการตรวจ {formatDate(activeLog.analysis?.examinationDate, 'D MMMM BBBB')}
+                                    {(() => {
+                                        const examDate = activeLog.analysis?.examinationDate;
+                                        if (!examDate || examDate === 'N/A') return null;
+                                        const rel = formatRelativeTime(examDate);
+                                        return rel ? ` (${rel})` : "";
+                                    })()}
+                                </span>
+
+                                {/* Hospital Name */}
+                                <div className="mt-2 text-gray-500">
+                                    <span>🏥 โรงพยาบาล {activeLog.analysis.hospitalName}</span>
                                 </div>
                             </div>
-                            {!isEditing && activeTab === 'detail' && (
-                                <div className="flex gap-2">
-                                    <button onClick={startEdit} className="p-2 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-black transition shadow-sm"><Edit2 size={16} /></button>
-                                    <button onClick={handleDelete} className="p-2 bg-red-50 border border-red-100 text-red-500 rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"><Trash2 size={16} /></button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
 
-                {/* Tab Menu */}
-                <div className="bg-gray-200/50 p-1 rounded-2xl flex gap-1 mb-8 max-w-md">
-                    <button onClick={() => setActiveTab('detail')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'detail' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><LayoutGrid size={16} /> รายละเอียด</button>
-                    <button onClick={() => setActiveTab('compare')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'compare' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><BarChart2 size={16} /> เปรียบเทียบ</button>
+                {/* Tab Menu & Filter Row */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div className="bg-gray-200/50 p-1 rounded-2xl flex gap-1 w-full md:w-auto">
+                        <button
+                            onClick={() => setActiveTab('detail')}
+                            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'detail' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <LayoutGrid size={16} /> รายละเอียด
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('compare')}
+                            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'compare' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <BarChart2 size={16} /> เปรียบเทียบ
+                        </button>
+                    </div>
+
+                    {/* Log Selection Dropdown */}
+                    {logs && logs.length > 0 && (
+                        <div className="relative group w-full md:w-64">
+                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-black transition-colors">
+                                <Clock size={16} />
+                            </div>
+                            <select
+                                value={activeLog?.id || ''}
+                                onChange={(e) => handleSelectLog(e.target.value)}
+                                className="w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-10 pr-10 rounded-2xl hover:border-gray-400 transition-all shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-black/5 text-sm font-medium"
+                            >
+                                {logs.map((log) => {
+                                    const dateValue = log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A'
+                                        ? log.analysis.examinationDate
+                                        : log.createdAt;
+                                    return (
+                                        <option key={log.id} value={log.id}>
+                                            รอบวันที่ {formatDate(dateValue, 'D MMM BBBB')}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-black transition-colors pointer-events-none">
+                                <ChevronDown size={14} />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -452,59 +404,12 @@ export default function LogsPage() {
                     <div className="text-center py-20 text-gray-400 bg-white rounded-[2rem] border border-dashed border-gray-200 mb-12">ยังไม่มีข้อมูลประวัติการตรวจสุขภาพ</div>
                 )}
 
-                {/* --- History List --- */}
-                {logs && logs.length > 0 && (
-                    <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
-                        <div className="space-y-4">
-                            {(logs || []).map((log) => {
-                                if (!log || !log.createdAt) return null;
-                                const isActive = activeLog?.id === log.id;
 
-                                const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
-                                    const name = normalizeMetricName(s.name);
-                                    const category = getCategory(name);
-                                    return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
-                                }) || [];
-
-                                return (
-                                    <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
-                                        <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
-                                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
-                                                <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
-                                                    ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
-                                                </h3>
-
-                                                <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                    {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
-                                                </p>
-
-                                                {abnormalStats.length > 0 && (
-                                                    <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
-                                                        <div className="flex items-center gap-1 whitespace-nowrap">
-                                                            <AlertCircle size={12} strokeWidth={3} />
-                                                            <span>ผิดปกติ {abnormalStats.length} :</span>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {abnormalStats.map((stat: any, i: number) => (
-                                                                <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                                                    {normalizeMetricName(stat.name)}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
-                                    </div>
-                                )
-                            })}
-                        </div >
-                    </div >
+                {/* Footer Metadata */}
+                {activeLog && (
+                    <div className="mt-8 text-center">
+                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.createdAt)} น.</p>
+                    </div>
                 )}
             </div >
         </div >
