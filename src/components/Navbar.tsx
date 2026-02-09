@@ -40,6 +40,9 @@ export default function Navbar() {
                     <Link to="/logs" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
                         ประวัติ
                     </Link>
+                    <Link to="/compare" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
+                        เปรียบเทียบ
+                    </Link>
                     <Link to="/profile" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full transition text-sm font-medium text-gray-500 hover:bg-gray-200" activeProps={{ className: "bg-black text-white hover:bg-black" }}>
                         โปรไฟล์
                     </Link>
