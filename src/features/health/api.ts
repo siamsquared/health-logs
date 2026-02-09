@@ -16,7 +16,6 @@ export interface AnalysisData {
 
 export interface HealthLog {
     id: string;
-    imageUrl: string; // Keep for backward compatibility
     imageUrls?: string[]; // New field for multiple images
     analysis: AnalysisData;
     createdAt: number;
@@ -37,7 +36,6 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
             if (data.status !== 0) {
                 logs.push({
                     id: doc.id,
-                    imageUrl: data.imageUrl || data.imageUrls?.[0] || '', // Use first image from array if imageUrl not present
                     imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
