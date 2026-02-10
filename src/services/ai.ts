@@ -58,6 +58,8 @@ export async function analyzeImage(imageUrls: string | string[], profile: any) {
                 - อายุ: ${profile.age || "ไม่ระบุ"} ปี
                 - น้ำหนัก: ${profile.weight || "ไม่ระบุ"} กก.
                 - ส่วนสูง: ${profile.height || "ไม่ระบุ"} ซม.
+                - โรคประจำตัว: ${profile.chronic_diseases?.length > 0 ? profile.chronic_diseases.join(", ") : "ไม่มี"}
+                - ประวัติแพ้ยา/อาหาร: ${profile.allergies?.length > 0 ? profile.allergies.join(", ") : "ไม่มี"}
             `
             : "";
 

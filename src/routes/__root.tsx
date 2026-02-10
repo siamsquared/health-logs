@@ -14,8 +14,8 @@ function RootComponent() {
 
   useEffect(() => {
     if (status === 'authenticated' && user && !user.isProfileSetup) {
-      if (location.pathname !== '/profile') {
-        navigate({ to: '/profile' })
+      if (location.pathname !== '/settings') {
+        navigate({ to: '/settings' })
       }
     }
   }, [status, user, navigate, location.pathname])

@@ -77,7 +77,9 @@ export default function HomePage() {
             gender: user.gender || "ไม่ระบุ",
             age: calculateAge(user.birthDate) || "ไม่ระบุ",
             weight: user.weight || "ไม่ระบุ",
-            height: user.height || "ไม่ระบุ"
+            height: user.height || "ไม่ระบุ",
+            chronic_diseases: user.chronic_diseases || [],
+            allergies: user.allergies || []
         };
 
         try {
