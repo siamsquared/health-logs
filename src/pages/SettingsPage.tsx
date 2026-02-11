@@ -448,6 +448,16 @@ export default function SettingsPage() {
         resetForm();
     }, [user]);
 
+    // Keep selectedLog in sync with latest data
+    useEffect(() => {
+        if (selectedLog && logs) {
+            const updatedLog = logs.find(l => l.id === selectedLog.id);
+            if (updatedLog) {
+                setSelectedLog(updatedLog);
+            }
+        }
+    }, [logs]);
+
     const handleAddDisease = () => {
         if (newDisease.trim()) {
             setFormData(prev => ({
