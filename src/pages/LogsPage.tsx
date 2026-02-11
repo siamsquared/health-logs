@@ -30,7 +30,7 @@ const NoteSection = ({ logId, initialNote }: { logId: string, initialNote?: stri
 
     return (
         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100/50 mb-6 transition-all hover:shadow-md">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     📝 บันทึกเพิ่มเติม
                 </h3>
@@ -125,17 +125,17 @@ export default function LogsPage() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
+        <div className="min-h-screen min-h-dvh bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-6">
             <Navbar />
 
             <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in">
 
                 {/* Header Section: Identity of the record */}
                 {activeLog && activeLog.createdAt && (
-                    <div className="mb-6">
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-3">ผลการตรวจ</h1>
-                        <div className="flex flex-col gap-2 text-gray-500">
-                            <span className="flex items-center gap-1.5 text-sm">
+                    <div className="mb-4 px-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-4">ผลการตรวจ</h1>
+                        <div className="flex flex-col gap-1.5 sm:gap-2 text-gray-500">
+                            <span className="flex items-center gap-1.5 text-xs sm:text-sm">
                                 📅 วันที่รับการตรวจ {formatDate(activeLog.analysis?.examinationDate, 'D MMMM BBBB')}
                                 {(() => {
                                     const examDate = activeLog.analysis?.examinationDate;
@@ -144,7 +144,7 @@ export default function LogsPage() {
                                     return rel ? ` (${rel})` : "";
                                 })()}
                             </span>
-                            <span className="flex items-center gap-1.5 text-sm">
+                            <span className="flex items-center gap-1.5 text-xs sm:text-sm">
                                 🏥 โรงพยาบาล {activeLog.analysis.hospitalName}
                             </span>
                         </div>
@@ -153,7 +153,7 @@ export default function LogsPage() {
 
                 {/* Control Row: Switcher for different records */}
                 {logs && logs.length > 0 && (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 mb-6 border-y border-gray-200/60 bg-white/30 -mx-4 px-4 md:mx-0 md:rounded-2xl md:px-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 mb-4 border-y border-gray-200/60 bg-white/30 -mx-4 px-4 md:mx-0 md:rounded-2xl md:px-6">
                         <div className="flex items-center gap-2 text-gray-900">
                             <LayoutGrid size={18} className="text-black" />
                             <span className="text-sm font-bold uppercase tracking-wide">ภาพรวมสุขภาพ</span>

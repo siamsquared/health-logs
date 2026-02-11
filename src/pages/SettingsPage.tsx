@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect, forwardRef, useRef } from "react";
 import { useAuth } from "@/features/auth/useAuth";
 import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
@@ -60,6 +60,13 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
     const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
     const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
     const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo(0, 0);
+        }
+    }, [isEditing]);
 
 
     useEffect(() => {
@@ -101,22 +108,24 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
         <>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-fade-in">
 
-                <div className="bg-[#F5F5F7] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
-                    <div className="p-6 md:p-8 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900">รายละเอียดผลการตรวจ</h2>
-                            <p className="text-gray-500 text-sm mt-1">
-                                {formatDate(log.analysis?.examinationDate, 'D MMMM BBBB') || 'ไม่ระบุวันที่รับการตรวจ'} • {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}
-                            </p>
+                <div className="bg-[#F5F5F7] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-scale-up border border-white/20">
+                    <div className="p-5 sm:p-8 bg-white border-b border-gray-100 flex flex-col sm:flex-row gap-6 sm:items-center justify-between shrink-0">
+                        <div className="min-w-0">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">รายละเอียดผลการตรวจ</h2>
+                            <div className="text-gray-500 text-xs sm:text-sm mt-3 sm:mt-4 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(log.analysis?.examinationDate, 'D MMMM BBBB') || 'ไม่ระบุวันที่'}</span>
+                                <span className="hidden sm:inline text-gray-300">•</span>
+                                <span className="flex items-center gap-1"><MapPin size={12} /> {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                             {!isEditing ? (
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition text-xs sm:text-sm shadow-sm"
                                 >
-                                    <Edit2 size={18} /> แก้ไขข้อมูล
+                                    <Edit2 size={16} /> แก้ไขข้อมูล
                                 </button>
                             ) : (
                                 <div className="flex items-center gap-2">
@@ -126,7 +135,7 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                             setIsEditing(false);
                                             setEditedAnalysis(JSON.parse(JSON.stringify(log.analysis)));
                                         }}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
+                                        className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl font-bold transition text-xs sm:text-sm"
                                     >
                                         ยกเลิก
                                     </button>
@@ -134,16 +143,16 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                         type="button"
                                         onClick={handleSave}
                                         disabled={isUpdating}
-                                        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap"
+                                        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap text-xs sm:text-sm shadow-md"
                                     >
                                         {isUpdating ? (
                                             <div key="updating-spinner" className="flex items-center gap-2">
-                                                <Loader2 size={18} className="animate-spin" />
+                                                <Loader2 size={16} className="animate-spin" />
                                                 <span>กำลังบันทึก...</span>
                                             </div>
                                         ) : (
                                             <div key="update-idle" className="flex items-center gap-2">
-                                                <Save size={18} />
+                                                <Save size={16} />
                                                 <span>บันทึก</span>
                                             </div>
                                         )}
@@ -153,37 +162,37 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition text-gray-500 hover:text-black"
+                                className="p-2 sm:p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition text-gray-500 hover:text-black shrink-0 shadow-sm"
                             >
-                                <X size={24} />
+                                <X size={20} className="sm:w-6 sm:h-6" />
                             </button>
                         </div>
                     </div>
-                    <div className="overflow-y-auto p-4 md:p-8 custom-scrollbar bg-[#F5F5F7] space-y-8">
+                    <div ref={scrollRef} className="overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-[#F5F5F7] space-y-8 flex-1">
 
                         {isEditing ? (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                        <div className="bg-blue-50 text-blue-600 p-2 rounded-lg"><Database size={20} /></div>
+                                <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900">
+                                        <div className="bg-blue-50 text-blue-600 p-2 rounded-lg shrink-0"><Database size={20} /></div>
                                         แก้ไขข้อมูลทั่วไปและรายการตรวจ
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-100">
                                         <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-600 flex items-center gap-2">
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 flex items-center gap-2">
                                                 <Hospital size={16} className="text-blue-500" /> ชื่อโรงพยาบาล
                                             </label>
                                             <input
                                                 type="text"
                                                 value={editedAnalysis.hospitalName || ""}
                                                 onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
-                                                className="w-full p-4 bg-gray-50 border border-transparent focus:bg-white focus:border-black rounded-2xl outline-none transition font-medium text-gray-800"
+                                                className="w-full p-4 bg-white border border-gray-200 focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 shadow-sm text-sm"
                                                 placeholder="ระบุชื่อโรงพยาบาล"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-600 flex items-center gap-2">
+                                            <label className="text-xs sm:text-sm font-bold text-gray-600 flex items-center gap-2">
                                                 <Calendar size={16} className="text-blue-500" /> วันที่รับการตรวจ (DD/MM/YYYY)
                                             </label>
                                             <div className="relative">
@@ -192,11 +201,8 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                                         const dateStr = editedAnalysis.examinationDate;
                                                         if (!dateStr) return null;
                                                         try {
-                                                            // Try parsing 'dd/MM/yyyy' format first
                                                             let date = parse(dateStr, 'dd/MM/yyyy', new Date());
                                                             if (isValid(date)) return date;
-
-                                                            // Fallback to ISO parsing if the above fails
                                                             date = parseISO(dateStr);
                                                             return isValid(date) ? date : null;
                                                         } catch (e) {
@@ -213,7 +219,7 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                                     }}
                                                     dateFormat="dd/MM/yyyy"
                                                     locale="th"
-                                                    className="w-full p-4 bg-gray-50 border border-transparent focus:bg-white focus:border-black rounded-2xl outline-none transition font-medium text-gray-800"
+                                                    className="w-full p-4 bg-white border border-gray-200 focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 shadow-sm text-sm"
                                                     placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
                                                     showYearDropdown
                                                     scrollableYearDropdown
@@ -227,47 +233,38 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                         {editedAnalysis.health_stats.map((stat, idx) => {
                                             const parseValue = (val: string) => {
                                                 if (!val || val === "N/A") return { num: val || "", unit: "" };
-
-                                                // Pattern 1: Starts with number (e.g. "120 mg/dL" or "120")
                                                 const match = val.match(/^([\d,.-]+)\s*(.*)$/);
-                                                if (match) {
-                                                    return { num: match[1], unit: match[2].trim() };
-                                                }
-
-                                                // Pattern 2: Starts with space (e.g. " mg/dL")
-                                                // This happens when number is deleted but unit remains
-                                                if (val.startsWith(" ")) {
-                                                    return { num: "", unit: val.trim() };
-                                                }
-
-                                                // Pattern 3: Text only (e.g. "Negative")
+                                                if (match) return { num: match[1], unit: match[2].trim() };
+                                                if (val.startsWith(" ")) return { num: "", unit: val.trim() };
                                                 return { num: val, unit: "" };
                                             };
 
                                             const { num, unit } = parseValue(stat.value);
 
                                             return (
-                                                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-blue-100 transition-colors">
+                                                <div key={idx} className="p-4 sm:p-5 bg-gray-50 rounded-2xl sm:rounded-[2rem] border border-gray-100 hover:border-blue-100 transition-all duration-300 overflow-hidden">
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                        <div className="flex-1">
-                                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">{stat.name}</label>
-                                                            <div className="flex gap-4">
-                                                                <div className="flex-1">
-                                                                    <label className="text-[10px] font-medium text-gray-500 ml-1">ค่าที่ตรวจได้ (Value)</label>
-                                                                    <div className="flex items-center gap-2 mt-1 px-3 py-2 bg-white border border-gray-200 rounded-xl focus-within:border-black transition">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={num}
-                                                                            onChange={(e) => {
-                                                                                const newNum = e.target.value;
-                                                                                handleStatChange(idx, 'value', unit ? `${newNum} ${unit}` : newNum);
-                                                                            }}
-                                                                            className="flex-1 outline-none font-bold text-gray-900 bg-transparent text-sm"
-                                                                            placeholder="กรอกข้อมูล"
-                                                                        />
-                                                                        {unit && <span className="text-gray-400 font-medium text-xs border-l pl-2 border-gray-100">{unit}</span>}
-                                                                    </div>
-                                                                </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <label className="text-sm font-bold text-gray-800 block mb-1 md:mb-0 truncate">{stat.name}</label>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
+                                                            <label className="text-[10px] font-medium text-gray-500 whitespace-nowrap flex-shrink-0">ค่าที่ตรวจได้ (Value)</label>
+                                                            <div className="flex items-center gap-2 px-4 py-4 bg-white border border-gray-200 rounded-xl focus-within:border-black transition w-full md:w-72 shadow-sm overflow-hidden flex-shrink-0">
+                                                                <input
+                                                                    type="text"
+                                                                    value={num}
+                                                                    onChange={(e) => {
+                                                                        const newNum = e.target.value;
+                                                                        handleStatChange(idx, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                    }}
+                                                                    className="flex-1 outline-none font-bold text-gray-900 bg-transparent text-sm min-w-0"
+                                                                    placeholder="กรอกข้อมูล"
+                                                                />
+                                                                {unit && (
+                                                                    <span className="text-gray-400 font-medium text-[10px] border-l pl-2 border-gray-100 whitespace-nowrap flex-shrink-0 max-w-[100px] truncate" title={unit}>
+                                                                        {unit}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -281,9 +278,8 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                             <AnalysisResult data={log.analysis} showAdvice={false} />
                         )}
 
-                        {/* Image Preview Section */}
                         {imageUrls.length > 0 && (
-                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                            <div className="space-y-4 pt-4 border-t border-gray-200/50">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                     <ImageIcon size={16} /> รูปภาพใบตรวจ ({imageUrls.length})
                                 </h3>
@@ -313,7 +309,6 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                 </div>
             </div>
 
-            {/* Zoom Layer */}
             {zoomedImage && (
                 <div
                     className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
@@ -330,7 +325,6 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                     >
                         <X size={28} />
                     </button>
-                    {/* Helper text */}
                     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10">
                         คลิกที่ไหนก็ได้เพื่อปิด
                     </div>
@@ -603,27 +597,27 @@ export default function SettingsPage() {
     const emailInitial = user.email ? user.email.charAt(0).toUpperCase() : "?";
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans pb-20">
+        <div className="min-h-screen min-h-dvh bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-6">
             <Navbar />
             <div className="max-w-2xl mx-auto p-4 md:p-6 animate-fade-in-up">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold tracking-tight">ตั้งค่า</h1>
-                    <p className="text-gray-500 mt-2">จัดการข้อมูลส่วนตัวและข้อมูลสุขภาพ</p>
+                <div className="mb-4">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">ตั้งค่า</h1>
+                    <p className="text-sm sm:text-base text-gray-500">จัดการข้อมูลส่วนตัวและข้อมูลสุขภาพ</p>
                 </div>
 
-                <div className="flex bg-gray-200/50 p-1.5 rounded-2xl mb-6">
+                <div className="flex bg-gray-200/50 p-1 rounded-2xl sm:p-1.5 mb-6">
                     <button
                         onClick={() => { setActiveTab('profile'); setIsEditing(false); }}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${activeTab === 'profile' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        <User size={18} />
+                        <User size={16} className="sm:w-[18px] sm:h-[18px]" />
                         ข้อมูลส่วนตัว
                     </button>
                     <button
                         onClick={() => { setActiveTab('metadata'); setIsEditing(false); }}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'metadata' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${activeTab === 'metadata' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        <Database size={18} />
+                        <Database size={16} className="sm:w-[18px] sm:h-[18px]" />
                         ข้อมูลสุขภาพ
                     </button>
                 </div>
@@ -651,7 +645,7 @@ export default function SettingsPage() {
                                         value={formData.displayName}
                                         onChange={e => setFormData({ ...formData, displayName: e.target.value })}
                                         disabled={!isEditing}
-                                        className="font-bold text-lg text-gray-900 bg-transparent border border-transparent rounded focus:bg-white focus:border-gray-200 outline-none transition disabled:opacity-100 disabled:cursor-text w-full"
+                                        className="font-bold text-lg text-gray-900 bg-transparent border border-transparent rounded focus:bg-white focus:border-gray-200 outline-none transition disabled:opacity-100 disabled:cursor-text w-full mb-2"
                                         placeholder="ชื่อของคุณ" />
                                     <p className="text-sm text-gray-500">{user.email}</p>
                                 </div>
@@ -868,22 +862,22 @@ export default function SettingsPage() {
                                                     key={log.id}
                                                     className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                                                 >
-                                                    <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex justify-between items-start mb-8">
                                                         <div
-                                                            className="flex items-center gap-3 flex-1 cursor-pointer active:scale-[0.98] transition-transform"
+                                                            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer active:scale-[0.98] transition-transform"
                                                             onClick={() => setSelectedLog(log)}
                                                         >
-                                                            <div className="p-3 bg-gray-50 rounded-2xl text-black group-hover:bg-black group-hover:text-white transition-colors duration-300">
+                                                            <div className="p-3 bg-gray-50 rounded-2xl text-black group-hover:bg-black group-hover:text-white transition-colors duration-300 shrink-0">
                                                                 <FileText size={20} />
                                                             </div>
-                                                            <div>
+                                                            <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                                                                    <Clock size={14} className="text-gray-400" />
-                                                                    {formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM BBBB')}
+                                                                    <Clock size={14} className="text-gray-400 shrink-0" />
+                                                                    <span className="truncate">{formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM BBBB')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mt-0.5">
-                                                                    <MapPin size={12} />
-                                                                    {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}
+                                                                    <MapPin size={12} className="shrink-0" />
+                                                                    <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -995,20 +989,20 @@ export default function SettingsPage() {
             {/* Delete Confirmation Modal */}
             {logToDelete && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-scale-up">
-                        <div className="flex items-center justify-center mb-6">
-                            <div className="p-4 bg-red-50 rounded-full">
-                                <Trash2 size={32} className="text-red-600" />
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up">
+                        <div className="flex items-center justify-center mb-4 sm:mb-6">
+                            <div className="p-3 sm:p-4 bg-red-50 rounded-full">
+                                <Trash2 size={28} className="text-red-600 sm:w-8 sm:h-8" />
                             </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">ยืนยันการลบรายงาน</h2>
-                        <p className="text-gray-600 text-center mb-2">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2 sm:mb-3">ยืนยันการลบรายงาน</h2>
+                        <p className="text-sm sm:text-base text-gray-600 text-center mb-1 sm:mb-2">
                             คุณแน่ใจหรือไม่ว่าต้องการลบรายงานผลตรวจสุขภาพนี้?
                         </p>
-                        <p className="text-sm text-gray-500 text-center mb-6">
+                        <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6">
                             วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM BBBB')}
                         </p>
-                        <p className="text-xs text-red-600 text-center mb-6 font-medium">
+                        <p className="text-[10px] sm:text-xs text-red-600 text-center mb-6 font-medium">
                             ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้ และจะลบรูปภาพที่เกี่ยวข้องทั้งหมด
                         </p>
                         <div className="flex gap-3">
@@ -1016,7 +1010,7 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={() => setLogToDelete(null)}
                                 disabled={isDeleting}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-xl font-bold transition disabled:opacity-50"
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-xl font-bold transition disabled:opacity-50 text-sm sm:text-base"
                             >
                                 ยกเลิก
                             </button>
@@ -1024,16 +1018,16 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={handleDeleteLog}
                                 disabled={isDeleting}
-                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap text-sm sm:text-base"
                             >
                                 {isDeleting ? (
                                     <div key="deleting-spinner" className="flex items-center gap-2">
-                                        <Loader2 className="animate-spin" size={18} />
+                                        <Loader2 className="animate-spin" size={16} />
                                         <span>กำลังลบ...</span>
                                     </div>
                                 ) : (
                                     <div key="delete-idle" className="flex items-center gap-2">
-                                        <Trash2 size={18} />
+                                        <Trash2 size={16} />
                                         <span>ลบรายงาน</span>
                                     </div>
                                 )}

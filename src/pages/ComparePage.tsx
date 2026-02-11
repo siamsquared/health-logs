@@ -284,12 +284,12 @@ export default function ComparePage() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
+        <div className="min-h-screen min-h-dvh bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-6">
             <Navbar />
 
             <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">เปรียบเทียบผลตรวจ</h1>
+                <div className="mb-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">เปรียบเทียบผลตรวจ</h1>
                     <p className="text-gray-500">ติดตามแนวโน้มสุขภาพของคุณจากการตรวจหลายครั้ง</p>
                 </div>
 
@@ -297,8 +297,8 @@ export default function ComparePage() {
                     {/* --- Highcharts Section --- */}
                     {((logs || []).length > 1) ? (
                         <>
-                            <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-gray-100">
-                                <div className="flex items-center gap-2 mb-6">
+                            <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-2 mb-8">
                                     <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20} /></div>
                                     <h2 className="font-bold text-lg text-gray-800">แนวโน้มสุขภาพ</h2>
                                 </div>

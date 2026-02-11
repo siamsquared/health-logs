@@ -136,7 +136,7 @@ export default function HomePage() {
     if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7] text-gray-400">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
+        <div className="min-h-screen min-h-dvh bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-6">
             {isAuthenticated && <Navbar />}
             {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer} />}
 
@@ -155,8 +155,8 @@ export default function HomePage() {
                             <div className="w-24 h-24 bg-black text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl">
                                 <Activity size={48} />
                             </div>
-                            <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 mb-6">OneHealth</h1>
-                            <p className="text-xl text-gray-500 max-w-lg mb-12 font-medium">เปลี่ยนผลตรวจสุขภาพที่เข้าใจยาก
+                            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 mb-6 font-sans">OneHealth</h1>
+                            <p className="text-lg sm:text-xl text-gray-500 max-w-lg mb-10 sm:mb-12 font-medium px-4">เปลี่ยนผลตรวจสุขภาพที่เข้าใจยาก
                                 ให้เป็นเรื่องง่ายด้วย AI</p>
                             <div className="flex flex-col gap-3">
                                 <button onClick={handleLogin}
@@ -175,20 +175,22 @@ export default function HomePage() {
                     )}
 
                     {isAuthenticated && !result && !processing && (
-                        <div className="mt-12 text-center">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 tracking-tight">สวัสดี {user?.displayName?.split(' ')[0]}</h2>
-                            <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
+                        <div className="mt-12 sm:mt-16 text-center">
+                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight">สวัสดี {user?.displayName?.split(' ')[0]}</h2>
+                            <p className="text-gray-500 mb-12 sm:mb-16 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
-                                className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
+                                className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 sm:p-12 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
                                 <input type="file" onChange={handleFileSelect} accept="image/*" multiple className="hidden"
                                     id="fileInput" />
                                 <label htmlFor="fileInput"
-                                    className="cursor-pointer flex flex-col items-center gap-6 w-full h-full relative z-10">
+                                    className="cursor-pointer flex flex-col items-center gap-8 sm:gap-12 w-full h-full relative z-10">
                                     <div
-                                        className="w-24 h-24 bg-[#F5F5F7] rounded-full flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition duration-500">
-                                        <Upload size={40} /></div>
-                                    <div><p className="text-2xl font-bold text-gray-900 mb-2">แตะเพื่ออัปโหลด</p><p
-                                        className="text-gray-400 font-medium">รูปถ่ายใบผลตรวจสุขภาพ</p></div>
+                                        className="w-20 h-20 sm:w-24 sm:h-24 bg-[#F5F5F7] rounded-full flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition duration-500">
+                                        <Upload size={32} className="sm:w-10 sm:h-10" /></div>
+                                    <div className="text-center px-4">
+                                        <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">แตะเพื่ออัปโหลด</p>
+                                        <p className="text-sm sm:text-base text-gray-400 font-medium">รูปถ่ายใบผลตรวจสุขภาพ</p>
+                                    </div>
                                 </label>
                             </div>
                         </div>
