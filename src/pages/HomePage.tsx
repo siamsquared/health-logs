@@ -9,6 +9,7 @@ import DisclaimerModal from "@/components/DisclaimerModal";
 import AnalysisResult from "@/components/AnalysisResult";
 import { Upload, Activity } from "lucide-react";
 import { analyzeImage } from "@/services/ai";
+import ImagePreviewModal from "@/components/ImagePreviewModal";
 
 const GoogleIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
@@ -33,6 +34,10 @@ export default function HomePage() {
     const [processing, setProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
     const [result, setResult] = useState<any>(null);
+
+    // Image Preview State
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
     const handleLogin = async () => {
         try {
@@ -66,10 +71,17 @@ export default function HomePage() {
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0 || !isAuthenticated || !user) return;
+        setSelectedFiles(Array.from(e.target.files));
+        setIsPreviewOpen(true);
+        e.target.value = "";
+    };
 
-        const files = Array.from(e.target.files);
+    const handleUploadConfirm = async (files: File[]) => {
+        setIsPreviewOpen(false);
+        if (!files || files.length === 0 || !isAuthenticated || !user) return;
+
         setProcessing(true);
         setProcessingStatus(`กำลังเตรียมอัปโหลด ${files.length} รายการ...`);
 
@@ -117,7 +129,7 @@ export default function HomePage() {
         } finally {
             setProcessing(false);
             setProcessingStatus("");
-            e.target.value = "";
+            setSelectedFiles([]);
         }
     };
 
@@ -127,6 +139,13 @@ export default function HomePage() {
         <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
             {isAuthenticated && <Navbar />}
             {isAuthenticated && !isDisclaimerAccepted && <DisclaimerModal onAgree={handleAgreeDisclaimer} />}
+
+            <ImagePreviewModal
+                isOpen={isPreviewOpen}
+                files={selectedFiles}
+                onClose={() => { setIsPreviewOpen(false); setSelectedFiles([]); }}
+                onConfirm={handleUploadConfirm}
+            />
 
             <div
                 className={`p-4 md:p-6 transition duration-500 ${isAuthenticated && !isDisclaimerAccepted ? 'blur-sm pointer-events-none' : ''}`}>
@@ -161,7 +180,7 @@ export default function HomePage() {
                             <p className="text-gray-500 mb-8 md:mb-12 text-base md:text-lg">สุขภาพวันนี้เป็นอย่างไรบ้าง?</p>
                             <div
                                 className="bg-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-16 shadow-xl hover:shadow-2xl transition duration-500 max-w-xl mx-auto cursor-pointer group border border-gray-100 relative overflow-hidden">
-                                <input type="file" onChange={handleFileUpload} accept="image/*" multiple className="hidden"
+                                <input type="file" onChange={handleFileSelect} accept="image/*" multiple className="hidden"
                                     id="fileInput" />
                                 <label htmlFor="fileInput"
                                     className="cursor-pointer flex flex-col items-center gap-6 w-full h-full relative z-10">
