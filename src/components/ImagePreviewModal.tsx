@@ -274,15 +274,15 @@ export default function ImagePreviewModal({ isOpen, files, onClose, onConfirm }:
                                 className="px-8 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
                             >
                                 {isProcessing ? (
-                                    <>
+                                    <div key="processing-text" className="flex items-center gap-2">
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        กำลังประมวลผล...
-                                    </>
+                                        <span>กำลังประมวลผล...</span>
+                                    </div>
                                 ) : (
-                                    <>
+                                    <div key="confirm-text" className="flex items-center gap-2">
                                         <Check size={20} />
-                                        ยืนยัน ({images.length})
-                                    </>
+                                        <span>ยืนยัน ({images.length})</span>
+                                    </div>
                                 )}
                             </button>
                         </div>

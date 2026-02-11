@@ -8,6 +8,10 @@
     body {
         font-family: 'Prompt', sans-serif;
         @apply bg-[#F5F5F7] text-gray-900;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        line-height: 1.6;
     }
 }
 

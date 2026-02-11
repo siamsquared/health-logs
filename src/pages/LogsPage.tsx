@@ -69,7 +69,11 @@ const NoteSection = ({ logId, initialNote }: { logId: string, initialNote?: stri
                             disabled={updateNote.isPending}
                             className="px-6 py-2 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 font-medium shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transform hover:-translate-y-0.5 active:translate-y-0"
                         >
-                            {updateNote.isPending ? "กำลังบันทึก..." : "บันทึก"}
+                            {updateNote.isPending ? (
+                                <span key="saving-text">กำลังบันทึก...</span>
+                            ) : (
+                                <span key="save-text">บันทึก</span>
+                            )}
                         </button>
                     </div>
                 </div>

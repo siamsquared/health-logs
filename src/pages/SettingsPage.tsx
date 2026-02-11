@@ -134,9 +134,19 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                         type="button"
                                         onClick={handleSave}
                                         disabled={isUpdating}
-                                        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50"
+                                        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap"
                                     >
-                                        {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} บันทึก
+                                        {isUpdating ? (
+                                            <div key="updating-spinner" className="flex items-center gap-2">
+                                                <Loader2 size={18} className="animate-spin" />
+                                                <span>กำลังบันทึก...</span>
+                                            </div>
+                                        ) : (
+                                            <div key="update-idle" className="flex items-center gap-2">
+                                                <Save size={18} />
+                                                <span>บันทึก</span>
+                                            </div>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -954,8 +964,18 @@ export default function SettingsPage() {
                                 <X size={20} /> ยกเลิก
                             </button>
                             <button type="submit" disabled={saving}
-                                className="flex-1 bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
-                                {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />} บันทึก
+                                className="flex-1 bg-black hover:bg-gray-800 text-white py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap">
+                                {saving ? (
+                                    <div key="saving-spinner" className="flex items-center gap-2">
+                                        <Loader2 className="animate-spin" size={20} />
+                                        <span>กำลังบันทึก...</span>
+                                    </div>
+                                ) : (
+                                    <div key="save-idle" className="flex items-center gap-2">
+                                        <Save size={20} />
+                                        <span>บันทึก</span>
+                                    </div>
+                                )}
                             </button>
                         </div>
                     ) : (
@@ -1004,18 +1024,18 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={handleDeleteLog}
                                 disabled={isDeleting}
-                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap"
                             >
                                 {isDeleting ? (
-                                    <>
+                                    <div key="deleting-spinner" className="flex items-center gap-2">
                                         <Loader2 className="animate-spin" size={18} />
-                                        กำลังลบ...
-                                    </>
+                                        <span>กำลังลบ...</span>
+                                    </div>
                                 ) : (
-                                    <>
+                                    <div key="delete-idle" className="flex items-center gap-2">
                                         <Trash2 size={18} />
-                                        ลบรายงาน
-                                    </>
+                                        <span>ลบรายงาน</span>
+                                    </div>
                                 )}
                             </button>
                         </div>
