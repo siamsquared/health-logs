@@ -70,3 +70,7 @@ export const updateLogDate = async (userId: string, logId: string, newDate: numb
         "analysis.examinationDate": dateString
     });
 };
+export const updateLogAnalysis = async (userId: string, logId: string, analysis: AnalysisData) => {
+    const logRef = doc(db, "users", userId, "reports", logId);
+    await updateDoc(logRef, { analysis });
+};

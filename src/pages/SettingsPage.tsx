@@ -1,17 +1,19 @@
 import { useState, useEffect, forwardRef } from "react";
 import { useAuth } from "@/features/auth/useAuth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { db, storage } from "@/lib/firebase";
+import { ref, deleteObject } from "firebase/storage";
 import Navbar from "@/components/Navbar";
-import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, Clock, MapPin } from "lucide-react";
+import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, Clock, MapPin, Hospital, Image as ImageIcon, Maximize2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { differenceInYears, parseISO, format, isValid } from "date-fns";
+import { differenceInYears, parseISO, format, isValid, parse } from "date-fns";
 import { th } from "date-fns/locale";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useHealthLogs } from "@/features/health/queries";
+import { useHealthLogs, useUpdateLogAnalysis } from "@/features/health/queries";
 import AnalysisResult from "@/components/AnalysisResult";
 import { formatDate } from "@/lib/date";
+import { AnalysisData } from "@/features/health/api";
 
 registerLocale("th", th);
 
@@ -53,33 +55,281 @@ const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disab
     );
 });
 
-const ReportModal = ({ log, onClose }: { log: any, onClose: () => void }) => {
-    if (!log) return null;
+const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClose: () => void }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
+    const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+
+    useEffect(() => {
+        if (log) {
+            setEditedAnalysis(JSON.parse(JSON.stringify(log.analysis)));
+        }
+    }, [log]);
+
+    if (!log || !editedAnalysis) return null;
+
+    const imageUrls = log.imageUrls || (log.imageUrl ? [log.imageUrl] : []);
+
+    const handleSave = () => {
+
+        if (!editedAnalysis) return;
+        updateAnalysis({
+            userId,
+            logId: log.id,
+            analysis: editedAnalysis
+        }, {
+            onSuccess: () => {
+                setIsEditing(false);
+                alert("บันทึกข้อมูลเรียบร้อย");
+            },
+            onError: (err) => {
+                alert("เกิดข้อผิดพลาด: " + (err as any).message);
+            }
+        });
+    };
+
+    const handleStatChange = (index: number, field: string, value: string) => {
+        if (!editedAnalysis) return;
+        const newStats = [...editedAnalysis.health_stats];
+        newStats[index] = { ...newStats[index], [field]: value };
+        setEditedAnalysis({ ...editedAnalysis, health_stats: newStats });
+    };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[#F5F5F7] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
-                <div className="p-6 md:p-8 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900">รายละเอียดผลการตรวจ</h2>
-                        <p className="text-gray-500 text-sm mt-1">
-                            {formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM BBBB')} • {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}
-                        </p>
+        <>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm animate-fade-in">
+
+                <div className="bg-[#F5F5F7] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
+                    <div className="p-6 md:p-8 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">รายละเอียดผลการตรวจ</h2>
+                            <p className="text-gray-500 text-sm mt-1">
+                                {formatDate(log.analysis?.examinationDate, 'D MMMM BBBB') || 'ไม่ระบุวันที่รับการตรวจ'} • {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {!isEditing ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
+                                >
+                                    <Edit2 size={18} /> แก้ไขข้อมูล
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setEditedAnalysis(JSON.parse(JSON.stringify(log.analysis)));
+                                        }}
+                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSave}
+                                        disabled={isUpdating}
+                                        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50"
+                                    >
+                                        {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} บันทึก
+                                    </button>
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition text-gray-500 hover:text-black"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition text-gray-500 hover:text-black"
-                    >
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="overflow-y-auto p-4 md:p-8 custom-scrollbar">
-                    <AnalysisResult data={log.analysis} />
+                    <div className="overflow-y-auto p-4 md:p-8 custom-scrollbar bg-[#F5F5F7] space-y-8">
+
+                        {isEditing ? (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                        <div className="bg-blue-50 text-blue-600 p-2 rounded-lg"><Database size={20} /></div>
+                                        แก้ไขข้อมูลทั่วไปและรายการตรวจ
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-100">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-600 flex items-center gap-2">
+                                                <Hospital size={16} className="text-blue-500" /> ชื่อโรงพยาบาล
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={editedAnalysis.hospitalName || ""}
+                                                onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
+                                                className="w-full p-4 bg-gray-50 border border-transparent focus:bg-white focus:border-black rounded-2xl outline-none transition font-medium text-gray-800"
+                                                placeholder="ระบุชื่อโรงพยาบาล"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-600 flex items-center gap-2">
+                                                <Calendar size={16} className="text-blue-500" /> วันที่รับการตรวจ (DD/MM/YYYY)
+                                            </label>
+                                            <div className="relative">
+                                                <DatePicker
+                                                    selected={(() => {
+                                                        const dateStr = editedAnalysis.examinationDate;
+                                                        if (!dateStr) return null;
+                                                        try {
+                                                            // Try parsing 'dd/MM/yyyy' format first
+                                                            let date = parse(dateStr, 'dd/MM/yyyy', new Date());
+                                                            if (isValid(date)) return date;
+
+                                                            // Fallback to ISO parsing if the above fails
+                                                            date = parseISO(dateStr);
+                                                            return isValid(date) ? date : null;
+                                                        } catch (e) {
+                                                            return null;
+                                                        }
+                                                    })()}
+                                                    onChange={(date: Date | null) => {
+                                                        if (date) {
+                                                            setEditedAnalysis({
+                                                                ...editedAnalysis,
+                                                                examinationDate: format(date, 'dd/MM/yyyy')
+                                                            });
+                                                        }
+                                                    }}
+                                                    dateFormat="dd/MM/yyyy"
+                                                    locale="th"
+                                                    className="w-full p-4 bg-gray-50 border border-transparent focus:bg-white focus:border-black rounded-2xl outline-none transition font-medium text-gray-800"
+                                                    placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
+                                                    showYearDropdown
+                                                    scrollableYearDropdown
+                                                    yearDropdownItemNumber={100}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-4">
+                                        {editedAnalysis.health_stats.map((stat, idx) => {
+                                            const parseValue = (val: string) => {
+                                                if (!val || val === "N/A") return { num: val || "", unit: "" };
+
+                                                // Pattern 1: Starts with number (e.g. "120 mg/dL" or "120")
+                                                const match = val.match(/^([\d,.-]+)\s*(.*)$/);
+                                                if (match) {
+                                                    return { num: match[1], unit: match[2].trim() };
+                                                }
+
+                                                // Pattern 2: Starts with space (e.g. " mg/dL")
+                                                // This happens when number is deleted but unit remains
+                                                if (val.startsWith(" ")) {
+                                                    return { num: "", unit: val.trim() };
+                                                }
+
+                                                // Pattern 3: Text only (e.g. "Negative")
+                                                return { num: val, unit: "" };
+                                            };
+
+                                            const { num, unit } = parseValue(stat.value);
+
+                                            return (
+                                                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-blue-100 transition-colors">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                        <div className="flex-1">
+                                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">{stat.name}</label>
+                                                            <div className="flex gap-4">
+                                                                <div className="flex-1">
+                                                                    <label className="text-[10px] font-medium text-gray-500 ml-1">ค่าที่ตรวจได้ (Value)</label>
+                                                                    <div className="flex items-center gap-2 mt-1 px-3 py-2 bg-white border border-gray-200 rounded-xl focus-within:border-black transition">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={num}
+                                                                            onChange={(e) => {
+                                                                                const newNum = e.target.value;
+                                                                                handleStatChange(idx, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                            }}
+                                                                            className="flex-1 outline-none font-bold text-gray-900 bg-transparent text-sm"
+                                                                            placeholder="กรอกข้อมูล"
+                                                                        />
+                                                                        {unit && <span className="text-gray-400 font-medium text-xs border-l pl-2 border-gray-100">{unit}</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <AnalysisResult data={log.analysis} showAdvice={false} />
+                        )}
+
+                        {/* Image Preview Section */}
+                        {imageUrls.length > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                    <ImageIcon size={16} /> รูปภาพใบตรวจ ({imageUrls.length})
+                                </h3>
+                                <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x no-scrollbar">
+                                    {imageUrls.map((url: string, index: number) => (
+                                        <div
+                                            key={index}
+                                            onClick={() => setZoomedImage(url)}
+                                            className="relative group shrink-0 w-40 h-56 md:w-48 md:h-64 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-zoom-in snap-start"
+                                        >
+                                            <img
+                                                src={url}
+                                                alt={`Check-up report ${index + 1}`}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all">
+                                                    <Maximize2 size={20} className="text-black" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Zoom Layer */}
+            {zoomedImage && (
+                <div
+                    className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
+                    onClick={() => setZoomedImage(null)}
+                >
+                    <img
+                        src={zoomedImage}
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-up"
+                        alt="Zoomed report"
+                    />
+                    <button
+                        className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                        onClick={() => setZoomedImage(null)}
+                    >
+                        <X size={28} />
+                    </button>
+                    {/* Helper text */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10">
+                        คลิกที่ไหนก็ได้เพื่อปิด
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
+
 
 // --- Main Page ---
 
@@ -114,12 +364,58 @@ export default function SettingsPage() {
     const [weightError, setWeightError] = useState("");
     const [heightError, setHeightError] = useState("");
 
+    // Delete confirmation modal state
+    const [logToDelete, setLogToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const calculateAge = (dateString: string) => {
         if (!dateString) return "-";
         try {
             return differenceInYears(new Date(), parseISO(dateString));
         } catch (e) {
             return "-";
+        }
+    };
+
+    // Delete log function
+    const handleDeleteLog = async () => {
+        if (!logToDelete || !user) return;
+
+        setIsDeleting(true);
+        try {
+            // Delete associated storage files
+            const imageUrls = logToDelete.imageUrls || (logToDelete.imageUrl ? [logToDelete.imageUrl] : []);
+
+            for (const url of imageUrls) {
+                try {
+                    // Extract file path from URL
+                    const filePathMatch = url.match(/\/o\/(.+?)\?/);
+                    if (filePathMatch) {
+                        const filePath = decodeURIComponent(filePathMatch[1]);
+                        const fileRef = ref(storage, filePath);
+                        await deleteObject(fileRef);
+                    }
+                } catch (error) {
+                    console.error("Error deleting file:", error);
+                    // Continue even if file deletion fails
+                }
+            }
+
+            // Delete Firestore document
+            await deleteDoc(doc(db, "users", user.uid, "reports", logToDelete.id));
+
+            // Close modal if deleted log was selected
+            if (selectedLog?.id === logToDelete.id) {
+                setSelectedLog(null);
+            }
+
+            alert("ลบรายงานเรียบร้อยแล้ว");
+        } catch (error) {
+            console.error("Error deleting log:", error);
+            alert("เกิดข้อผิดพลาดในการลบรายงาน กรุณาลองใหม่อีกครั้ง");
+        } finally {
+            setIsDeleting(false);
+            setLogToDelete(null);
         }
     };
 
@@ -550,11 +846,13 @@ export default function SettingsPage() {
                                             {logs.map((log: any) => (
                                                 <div
                                                     key={log.id}
-                                                    onClick={() => setSelectedLog(log)}
-                                                    className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden active:scale-[0.98]"
+                                                    className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                                                 >
                                                     <div className="flex justify-between items-start mb-4">
-                                                        <div className="flex items-center gap-3">
+                                                        <div
+                                                            className="flex items-center gap-3 flex-1 cursor-pointer active:scale-[0.98] transition-transform"
+                                                            onClick={() => setSelectedLog(log)}
+                                                        >
                                                             <div className="p-3 bg-gray-50 rounded-2xl text-black group-hover:bg-black group-hover:text-white transition-colors duration-300">
                                                                 <FileText size={20} />
                                                             </div>
@@ -569,11 +867,30 @@ export default function SettingsPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="bg-gray-50 p-2 rounded-full text-gray-300 group-hover:text-black group-hover:bg-gray-100 transition-all">
-                                                            <ChevronRight size={20} />
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setLogToDelete(log);
+                                                                }}
+                                                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-full transition-all hover:scale-110"
+                                                                title="ลบรายงาน"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                            <div
+                                                                className="bg-gray-50 p-2 rounded-full text-gray-300 group-hover:text-black group-hover:bg-gray-100 transition-all cursor-pointer"
+                                                                onClick={() => setSelectedLog(log)}
+                                                            >
+                                                                <ChevronRight size={20} />
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 italic">
+                                                    <p
+                                                        className="text-gray-600 text-sm leading-relaxed line-clamp-2 italic cursor-pointer"
+                                                        onClick={() => setSelectedLog(log)}
+                                                    >
                                                         {log.analysis?.summary || 'ไม่มีข้อมูลสรุป'}
                                                     </p>
                                                 </div>
@@ -643,7 +960,58 @@ export default function SettingsPage() {
             </div>
 
             {/* Modal for detail view */}
-            {selectedLog && <ReportModal log={selectedLog} onClose={() => setSelectedLog(null)} />}
+            {selectedLog && <ReportModal log={selectedLog} userId={user.uid} onClose={() => setSelectedLog(null)} />}
+
+            {/* Delete Confirmation Modal */}
+            {logToDelete && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-scale-up">
+                        <div className="flex items-center justify-center mb-6">
+                            <div className="p-4 bg-red-50 rounded-full">
+                                <Trash2 size={32} className="text-red-600" />
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">ยืนยันการลบรายงาน</h2>
+                        <p className="text-gray-600 text-center mb-2">
+                            คุณแน่ใจหรือไม่ว่าต้องการลบรายงานผลตรวจสุขภาพนี้?
+                        </p>
+                        <p className="text-sm text-gray-500 text-center mb-6">
+                            วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM BBBB')}
+                        </p>
+                        <p className="text-xs text-red-600 text-center mb-6 font-medium">
+                            ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้ และจะลบรูปภาพที่เกี่ยวข้องทั้งหมด
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setLogToDelete(null)}
+                                disabled={isDeleting}
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-xl font-bold transition disabled:opacity-50"
+                            >
+                                ยกเลิก
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteLog}
+                                disabled={isDeleting}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={18} />
+                                        กำลังลบ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={18} />
+                                        ลบรายงาน
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
