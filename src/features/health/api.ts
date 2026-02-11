@@ -20,6 +20,7 @@ export interface HealthLog {
     analysis: AnalysisData;
     createdAt: number;
     status: number;
+    note?: string;
 }
 
 export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
@@ -39,7 +40,8 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
                     imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-                    status: data.status
+                    status: data.status,
+                    note: data.note,
                 });
             }
         });
@@ -73,4 +75,9 @@ export const updateLogDate = async (userId: string, logId: string, newDate: numb
 export const updateLogAnalysis = async (userId: string, logId: string, analysis: AnalysisData) => {
     const logRef = doc(db, "users", userId, "reports", logId);
     await updateDoc(logRef, { analysis });
+};
+
+export const updateLogNote = async (userId: string, logId: string, note: string) => {
+    const logRef = doc(db, "users", userId, "reports", logId);
+    await updateDoc(logRef, { note });
 };

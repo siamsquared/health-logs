@@ -1,13 +1,89 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/features/auth/useAuth";
-import { useHealthLogs } from "@/features/health/queries";
+import { useHealthLogs, useUpdateLogNote } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
 import AnalysisResult from "@/components/AnalysisResult";
-import { ChevronDown, Clock, LayoutGrid } from "lucide-react";
+import { ChevronDown, Clock, LayoutGrid, Pencil } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { formatDate, formatDateTime, formatRelativeTime } from "@/lib/date";
 
 // --- Sub-Components ---
+
+const NoteSection = ({ logId, initialNote }: { logId: string, initialNote?: string }) => {
+    const { user } = useAuth();
+    const [note, setNote] = useState(initialNote || "");
+    const [isEditing, setIsEditing] = useState(false);
+    const updateNote = useUpdateLogNote();
+
+    useEffect(() => {
+        setNote(initialNote || "");
+    }, [initialNote]);
+
+    const handleSave = () => {
+        if (!user) return;
+        updateNote.mutate({ userId: user.uid, logId, note }, {
+            onSuccess: () => {
+                setIsEditing(false);
+            }
+        });
+    };
+
+    return (
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100/50 mb-6 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    📝 บันทึกเพิ่มเติม
+                </h3>
+                {!isEditing && (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="p-2 -mr-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-all"
+                        title="แก้ไขบันทึก"
+                    >
+                        <Pencil size={16} />
+                    </button>
+                )}
+            </div>
+
+            {isEditing ? (
+                <div className="space-y-3 animate-fade-in">
+                    <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="เขียนบันทึกของคุณที่นี่... (เช่น อาการที่พบ, คำแนะนำจากหมอเพิ่มเติม)"
+                        className="w-full min-h-[120px] p-4 rounded-2xl border border-gray-200 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black/20 transition-all resize-none text-base leading-relaxed bg-gray-50/50"
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={() => {
+                                setIsEditing(false);
+                                setNote(initialNote || "");
+                            }}
+                            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors hover:bg-gray-100 rounded-xl"
+                        >
+                            ยกเลิก
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={updateNote.isPending}
+                            className="px-6 py-2 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 font-medium shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transform hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            {updateNote.isPending ? "กำลังบันทึก..." : "บันทึก"}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div
+                    onClick={() => setIsEditing(true)}
+                    className={`text-base leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-gray-50 -m-3 p-3 rounded-xl transition-all border border-transparent hover:border-gray-100 ${note ? 'text-gray-600' : 'text-gray-400 italic'}`}
+                >
+                    {note || "ยังไม่มีบันทึก... (กดเพื่อเพิ่มบันทึกช่วยจำ)"}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const LogsSkeleton = () => (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-pulse">
@@ -109,7 +185,13 @@ export default function LogsPage() {
                 {/* Content */}
                 {activeLog ? (
                     <div className="mb-12">
+
                         <AnalysisResult data={activeLog.analysis} />
+
+                        {/* Note Section */}
+                        <div className="mt-8">
+                            <NoteSection logId={activeLog.id} initialNote={activeLog.note} />
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center py-20 text-gray-400 bg-white rounded-[2rem] border border-dashed border-gray-200 mb-12">ยังไม่มีข้อมูลประวัติการตรวจสุขภาพ</div>
