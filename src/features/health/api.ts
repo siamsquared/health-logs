@@ -1,17 +1,24 @@
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
+export interface HealthStatsData {
+    name: string;
+    type: 'text' | 'number';
+    value: any;
+    unit?: string;
+    normalRange?: { min?: number; max?: number };
+    category: string;
+}
+
 export interface AnalysisData {
     hospitalName?: string;
     examinationDate?: string;
     summary: string;
-    health_stats: Array<{
-        name: string;
-        value: string;
-        ref_range: string;
-        status: string;
-    }>;
+    health_stats: Array<HealthStatsData>;
     recommendations: string[];
+    food_plan?: Record<string, string>;
+    exercise?: string;
+    general_advice?: string[];
 }
 
 export interface HealthLog {

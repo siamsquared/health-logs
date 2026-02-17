@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import { useAuth } from "@/features/auth/useAuth";
 import { useHealthLogs } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
-import { normalizeMetricName } from "@/components/AnalysisResult";
+import { normalizeMetricName, getCategory, categoryOrder } from "@/components/AnalysisResult";
 import { TrendingUp } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { formatDate } from "@/lib/date";
@@ -20,16 +20,6 @@ const CompareSkeleton = () => (
         <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="bg-gray-200 h-24 w-full rounded-[1.5rem]"></div>)}</div>
     </div>
 );
-
-const getCategory = (normalizedName: string) => {
-    const n = normalizedName.toLowerCase();
-    if (n === 'blood sugar' || n === 'hba1c' || n.includes('glucose')) return 'น้ำตาลในเลือด';
-    if (['bun', 'creatinine', 'egfr'].includes(n)) return 'การทำงานของไต';
-    if (n === 'uric acid') return 'กรดยูริค';
-    if (['cholesterol', 'triglyceride', 'hdl-c', 'ldl-c'].includes(n)) return 'ระดับไขมันในเลือด';
-    if (['sgot', 'sgpt', 'alk-phos'].includes(n)) return 'การทำงานของตับ';
-    return 'อื่นๆ';
-};
 
 const TableValueDisplay = ({ valueStr, isNormal }: { valueStr: string, isNormal: boolean }) => {
     const match = valueStr.match(/^([\d.]+)\s*(.*)$/);
@@ -55,19 +45,17 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
         )
     ));
 
-    const groupedMetrics: Record<string, string[]> = {
-        'น้ำตาลในเลือด': [],
-        'การทำงานของไต': [],
-        'กรดยูริค': [],
-        'ระดับไขมันในเลือด': [],
-        'การทำงานของตับ': []
-    };
+    const groupedMetrics: Record<string, string[]> = {};
+    for (const cat of categoryOrder) {
+        groupedMetrics[cat] = [];
+    }
 
     allMetricNames.forEach(name => {
         const category = getCategory(name);
-        if (groupedMetrics[category]) {
-            groupedMetrics[category].push(name);
+        if (!groupedMetrics[category]) {
+            groupedMetrics[category] = [];
         }
+        groupedMetrics[category].push(name);
     });
 
     Object.keys(groupedMetrics).forEach(key => {
@@ -96,7 +84,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {Object.entries(groupedMetrics).map(([category, metrics]) => (
-                            <div key={category} className="contents">
+                            <Fragment key={category}>
                                 {/* Sticky Category */}
                                 <tr className="bg-black">
                                     <td className="py-3 px-6 text-sm font-bold text-white sticky left-0 z-30 bg-black border-r border-gray-800 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.5)]">
@@ -107,17 +95,20 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                                 </tr>
 
                                 {metrics.sort().map((metricName: string) => {
-                                    const refRange = compareLogs.flatMap(log => log.analysis.health_stats || [])
-                                        .find((s: any) => normalizeMetricName(s.name) === metricName)?.ref_range;
+                                    const matchedStat = compareLogs.flatMap(log => log.analysis.health_stats || [])
+                                        .find((s: any) => normalizeMetricName(s.name) === metricName);
+                                    const normalRange = matchedStat?.normalRange;
+                                    const unit = matchedStat?.unit;
 
                                     return (
                                         <tr key={metricName} className="hover:bg-gray-50/50 transition group">
                                             {/* Sticky Row Title */}
                                             <td className="py-4 pl-6 pr-4 bg-white group-hover:bg-gray-50/50 sticky left-0 z-10 border-r border-gray-50 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
                                                 <div className="font-medium text-gray-700">{metricName}</div>
-                                                {refRange && (
+                                                {normalRange && (normalRange.min != null || normalRange.max != null) && (
                                                     <div className="text-[10px] text-gray-400 font-light mt-0.5">
-                                                        เกณฑ์: {refRange}
+                                                        เกณฑ์: {normalRange.min != null && normalRange.max != null ? `${normalRange.min} - ${normalRange.max}` : normalRange.min != null ? `≥ ${normalRange.min}` : `≤ ${normalRange.max}`}
+                                                        {unit && <span> {unit}</span>}
                                                     </div>
                                                 )}
                                             </td>
@@ -139,7 +130,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                                         </tr>
                                     );
                                 })}
-                            </div>
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
@@ -242,10 +233,6 @@ export default function ComparePage() {
                         if (!groups[category]) groups[category] = [];
                         groups[category].push(point);
                     });
-
-                    const categoryOrder = [
-                        'น้ำตาลในเลือด', 'การทำงานของไต', 'กรดยูริค', 'ระดับไขมันในเลือด', 'การทำงานของตับ'
-                    ];
 
                     categoryOrder.forEach(cat => {
                         if (groups[cat]) {

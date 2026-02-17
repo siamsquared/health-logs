@@ -11,9 +11,10 @@ import { th } from "date-fns/locale";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useHealthLogs, useUpdateLogAnalysis } from "@/features/health/queries";
-import AnalysisResult from "@/components/AnalysisResult";
+import AnalysisResult, { normalizeMetricName, getCategory, categoryOrder } from "@/components/AnalysisResult";
 import { formatDate } from "@/lib/date";
 import { AnalysisData } from "@/features/health/api";
+import { reAnalyzeFromData } from "@/services/ai";
 
 registerLocale("th", th);
 
@@ -55,10 +56,11 @@ const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disab
     );
 });
 
-const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClose: () => void }) => {
+const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string, user: any, onClose: () => void }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
     const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
+    const [isReAnalyzing, setIsReAnalyzing] = useState(false);
     const [zoomedImage, setZoomedImage] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -79,22 +81,47 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
 
     const imageUrls = log.imageUrls || (log.imageUrl ? [log.imageUrl] : []);
 
-    const handleSave = () => {
-
+    const handleSave = async () => {
         if (!editedAnalysis) return;
-        updateAnalysis({
-            userId,
-            logId: log.id,
-            analysis: editedAnalysis
-        }, {
-            onSuccess: () => {
-                setIsEditing(false);
-                alert("บันทึกข้อมูลเรียบร้อย");
-            },
-            onError: (err) => {
-                alert("เกิดข้อผิดพลาด: " + (err as any).message);
-            }
-        });
+
+        // Build profile for AI re-analysis
+        const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
+        const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
+
+        setIsReAnalyzing(true);
+        try {
+            // Run AI to re-calculate status, advice, summary, food_plan, exercise, general_advice
+            const aiResult = await reAnalyzeFromData(editedAnalysis.health_stats, profile);
+
+            // Merge AI results with edited analysis (keep hospitalName & examinationDate from user edits)
+            const updatedAnalysis: AnalysisData = {
+                ...editedAnalysis,
+                summary: aiResult.summary || editedAnalysis.summary,
+                health_stats: aiResult.health_stats || editedAnalysis.health_stats,
+                food_plan: aiResult.food_plan,
+                exercise: aiResult.exercise,
+                general_advice: aiResult.general_advice,
+            };
+
+            updateAnalysis({
+                userId,
+                logId: log.id,
+                analysis: updatedAnalysis
+            }, {
+                onSuccess: () => {
+                    setIsEditing(false);
+                    setIsReAnalyzing(false);
+                    alert("บันทึกและวิเคราะห์ข้อมูลใหม่เรียบร้อย");
+                },
+                onError: (err) => {
+                    setIsReAnalyzing(false);
+                    alert("เกิดข้อผิดพลาด: " + (err as any).message);
+                }
+            });
+        } catch (error) {
+            setIsReAnalyzing(false);
+            alert("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + (error as any).message);
+        }
     };
 
     const handleStatChange = (index: number, field: string, value: string) => {
@@ -131,21 +158,24 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setIsEditing(false);
-                                            setEditedAnalysis(JSON.parse(JSON.stringify(log.analysis)));
-                                        }}
-                                        className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl font-bold transition text-xs sm:text-sm"
+                                        onClick={() => { setIsEditing(false); setEditedAnalysis(JSON.parse(JSON.stringify(log.analysis))); }}
+                                        disabled={isReAnalyzing || isUpdating}
+                                        className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl font-bold transition text-xs sm:text-sm disabled:opacity-50"
                                     >
                                         ยกเลิก
                                     </button>
                                     <button
                                         type="button"
                                         onClick={handleSave}
-                                        disabled={isUpdating}
+                                        disabled={isUpdating || isReAnalyzing}
                                         className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap text-xs sm:text-sm shadow-md"
                                     >
-                                        {isUpdating ? (
+                                        {isReAnalyzing ? (
+                                            <div key="reanalyzing-spinner" className="flex items-center gap-2">
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>กำลังวิเคราะห์ AI...</span>
+                                            </div>
+                                        ) : isUpdating ? (
                                             <div key="updating-spinner" className="flex items-center gap-2">
                                                 <Loader2 size={16} className="animate-spin" />
                                                 <span>กำลังบันทึก...</span>
@@ -171,111 +201,139 @@ const ReportModal = ({ log, userId, onClose }: { log: any, userId: string, onClo
                     <div ref={scrollRef} className="overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-[#F5F5F7] space-y-8 flex-1">
 
                         {isEditing ? (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900">
-                                        <div className="bg-blue-50 text-blue-600 p-2 rounded-lg shrink-0"><Database size={20} /></div>
-                                        แก้ไขข้อมูลทั่วไปและรายการตรวจ
-                                    </h3>
+                            (() => {
+                                // Group stats by category (same logic as AnalysisResult)
+                                const groupedStats: Record<string, { stat: any; originalIndex: number }[]> = {};
+                                for (const cat of categoryOrder) {
+                                    groupedStats[cat] = [];
+                                }
+                                editedAnalysis.health_stats.forEach((stat, idx) => {
+                                    const normalizedName = normalizeMetricName(stat.name);
+                                    const category = stat.category || getCategory(normalizedName);
+                                    if (!groupedStats[category]) {
+                                        groupedStats[category] = [];
+                                    }
+                                    groupedStats[category].push({ stat: { ...stat, name: normalizedName }, originalIndex: idx });
+                                });
+                                Object.keys(groupedStats).forEach(key => {
+                                    if (groupedStats[key].length === 0) delete groupedStats[key];
+                                });
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-100">
-                                        <div className="space-y-2">
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 flex items-center gap-2">
-                                                <Hospital size={16} className="text-blue-500" /> ชื่อโรงพยาบาล
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={editedAnalysis.hospitalName || ""}
-                                                onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
-                                                className="w-full p-4 bg-white border border-gray-200 focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 shadow-sm text-sm"
-                                                placeholder="ระบุชื่อโรงพยาบาล"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs sm:text-sm font-bold text-gray-600 flex items-center gap-2">
-                                                <Calendar size={16} className="text-blue-500" /> วันที่รับการตรวจ (DD/MM/YYYY)
-                                            </label>
-                                            <div className="relative">
-                                                <DatePicker
-                                                    selected={(() => {
-                                                        const dateStr = editedAnalysis.examinationDate;
-                                                        if (!dateStr) return null;
-                                                        try {
-                                                            let date = parse(dateStr, 'dd/MM/yyyy', new Date());
-                                                            if (isValid(date)) return date;
-                                                            date = parseISO(dateStr);
-                                                            return isValid(date) ? date : null;
-                                                        } catch (e) {
-                                                            return null;
-                                                        }
-                                                    })()}
-                                                    onChange={(date: Date | null) => {
-                                                        if (date) {
-                                                            setEditedAnalysis({
-                                                                ...editedAnalysis,
-                                                                examinationDate: format(date, 'dd/MM/yyyy')
-                                                            });
-                                                        }
-                                                    }}
-                                                    dateFormat="dd/MM/yyyy"
-                                                    locale="th"
-                                                    className="w-full p-4 bg-white border border-gray-200 focus:border-black rounded-2xl outline-none transition font-medium text-gray-800 shadow-sm text-sm"
-                                                    placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
-                                                    showYearDropdown
-                                                    scrollableYearDropdown
-                                                    yearDropdownItemNumber={100}
-                                                />
+                                return (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                        {/* General Info Card - Hospital & Date */}
+                                        <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+                                            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 flex items-center gap-3 relative z-10">
+                                                <div className="bg-black text-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl"><FileText size={20} className="sm:w-6 sm:h-6" /></div>
+                                                ข้อมูลทั่วไป
+                                            </h2>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs sm:text-sm font-semibold text-gray-500 flex items-center gap-2">
+                                                        <Hospital size={14} /> ชื่อโรงพยาบาล
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={editedAnalysis.hospitalName || ""}
+                                                        onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
+                                                        className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
+                                                        placeholder="ระบุชื่อโรงพยาบาล"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs sm:text-sm font-semibold text-gray-500 flex items-center gap-2">
+                                                        <Calendar size={14} /> วันที่รับการตรวจ
+                                                    </label>
+                                                    <DatePicker
+                                                        selected={(() => {
+                                                            const dateStr = editedAnalysis.examinationDate;
+                                                            if (!dateStr) return null;
+                                                            try {
+                                                                let date = parse(dateStr, 'dd/MM/yyyy', new Date());
+                                                                if (isValid(date)) return date;
+                                                                date = parseISO(dateStr);
+                                                                return isValid(date) ? date : null;
+                                                            } catch (e) {
+                                                                return null;
+                                                            }
+                                                        })()}
+                                                        onChange={(date: Date | null) => {
+                                                            if (date) {
+                                                                setEditedAnalysis({
+                                                                    ...editedAnalysis,
+                                                                    examinationDate: format(date, 'dd/MM/yyyy')
+                                                                });
+                                                            }
+                                                        }}
+                                                        dateFormat="dd/MM/yyyy"
+                                                        locale="th"
+                                                        className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
+                                                        placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
+                                                        showYearDropdown
+                                                        scrollableYearDropdown
+                                                        yearDropdownItemNumber={100}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="grid gap-4">
-                                        {editedAnalysis.health_stats.map((stat, idx) => {
-                                            const parseValue = (val: string) => {
-                                                if (!val || val === "N/A") return { num: val || "", unit: "" };
-                                                const match = val.match(/^([\d,.-]+)\s*(.*)$/);
-                                                if (match) return { num: match[1], unit: match[2].trim() };
-                                                if (val.startsWith(" ")) return { num: "", unit: val.trim() };
-                                                return { num: val, unit: "" };
-                                            };
+                                        {/* Grouped Stats - Same layout as AnalysisResult */}
+                                        <div className="space-y-8">
+                                            {Object.entries(groupedStats).map(([category, items]) => (
+                                                <div key={category}>
+                                                    <h3 className="text-xl font-bold text-gray-800 mb-8 px-2 border-l-4 border-black pl-3">{category}</h3>
+                                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                                        {items.map(({ stat, originalIndex }) => {
+                                                            const parseValue = (val: string) => {
+                                                                if (!val || val === "N/A") return { num: val || "", unit: "" };
+                                                                const match = val.match(/^([\d,.-]+)\s*(.*)$/);
+                                                                if (match) return { num: match[1], unit: match[2].trim() };
+                                                                return { num: val, unit: "" };
+                                                            };
+                                                            const { num, unit } = parseValue(stat.value);
 
-                                            const { num, unit } = parseValue(stat.value);
+                                                            return (
+                                                                <div key={originalIndex}
+                                                                    className="p-6 rounded-[2rem] border transition duration-300 bg-white border-gray-100">
+                                                                    <div className="mb-4">
+                                                                        <span className="font-semibold text-gray-500 text-sm truncate pr-2">{stat.name}</span>
+                                                                    </div>
 
-                                            return (
-                                                <div key={idx} className="p-4 sm:p-5 bg-gray-50 rounded-2xl sm:rounded-[2rem] border border-gray-100 hover:border-blue-100 transition-all duration-300 overflow-hidden">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                        <div className="flex-1 min-w-0">
-                                                            <label className="text-sm font-bold text-gray-800 block mb-1 md:mb-0 truncate">{stat.name}</label>
-                                                        </div>
-                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
-                                                            <label className="text-[10px] font-medium text-gray-500 whitespace-nowrap flex-shrink-0">ค่าที่ตรวจได้ (Value)</label>
-                                                            <div className="flex items-center gap-2 px-4 py-4 bg-white border border-gray-200 rounded-xl focus-within:border-black transition w-full md:w-72 shadow-sm overflow-hidden flex-shrink-0">
-                                                                <input
-                                                                    type="text"
-                                                                    value={num}
-                                                                    onChange={(e) => {
-                                                                        const newNum = e.target.value;
-                                                                        handleStatChange(idx, 'value', unit ? `${newNum} ${unit}` : newNum);
-                                                                    }}
-                                                                    className="flex-1 outline-none font-bold text-gray-900 bg-transparent text-sm min-w-0"
-                                                                    placeholder="กรอกข้อมูล"
-                                                                />
-                                                                {unit && (
-                                                                    <span className="text-gray-400 font-medium text-[10px] border-l pl-2 border-gray-100 whitespace-nowrap flex-shrink-0 max-w-[100px] truncate" title={unit}>
-                                                                        {unit}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                                    {/* Editable value */}
+                                                                    <div className="flex items-baseline gap-2 mb-2">
+                                                                        <input
+                                                                            type={stat.type}
+                                                                            value={num}
+                                                                            onChange={(e) => {
+                                                                                const newNum = e.target.value;
+                                                                                handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                            }}
+                                                                            className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
+                                                                            placeholder="—"
+                                                                        />
+                                                                        {unit && (
+                                                                            <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {stat.normalRange && (stat.normalRange.min != null || stat.normalRange.max != null) && (
+                                                                        <p className="text-xs text-gray-400 mt-1">
+                                                                            เกณฑ์: {stat.normalRange.min != null && stat.normalRange.max != null ? `${stat.normalRange.min} - ${stat.normalRange.max}` : stat.normalRange.min != null ? `≥ ${stat.normalRange.min}` : `≤ ${stat.normalRange.max}`}
+                                                                            {stat.unit && <span> {stat.unit}</span>}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                );
+                            })()
                         ) : (
-                            <AnalysisResult data={log.analysis} showAdvice={false} />
+                            <AnalysisResult data={log.analysis} showAdvice={false} showSummary={false} />
                         )}
 
                         {imageUrls.length > 0 && (
@@ -879,6 +937,9 @@ export default function SettingsPage() {
                                                                     <MapPin size={12} className="shrink-0" />
                                                                     <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
+                                                                <div className="text-[10px] text-gray-300 mt-1">
+                                                                    บันทึกเมื่อ {formatDate(log.createdAt, 'D MMM BBBB HH:mm')}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
@@ -984,7 +1045,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Modal for detail view */}
-            {selectedLog && <ReportModal log={selectedLog} userId={user.uid} onClose={() => setSelectedLog(null)} />}
+            {selectedLog && <ReportModal log={selectedLog} userId={user.uid} user={user} onClose={() => setSelectedLog(null)} />}
 
             {/* Delete Confirmation Modal */}
             {logToDelete && (

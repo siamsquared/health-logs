@@ -1,35 +1,57 @@
 "use client";
 import { FileText, Apple, Dumbbell } from "lucide-react";
+import labMasterData from "@/data/metadata.json";
 
-// --- Helpers & Sub-Components ---
+// ── Build lookup maps from metadata.json ──
 
-export const normalizeMetricName = (name: string) => {
-    const n = name.toLowerCase().trim().replace('.', '').replace('-', ' ');
-    if (n.includes('sugar') || n.includes('glucose') || n.includes('fbs')) return 'Blood Sugar';
-    if (n.includes('hba1c')) return 'HbA1c';
-    if (n.includes('cholesterol') && !n.includes('hdl') && !n.includes('ldl')) return 'Cholesterol';
-    if (n.includes('triglyceride')) return 'Triglyceride';
-    if (n.includes('hdl')) return 'HDL-C';
-    if (n.includes('ldl')) return 'LDL-C';
-    if (n.includes('bun')) return 'BUN';
-    if (n.includes('creatinine')) return 'Creatinine';
-    if (n.includes('egfr') || n.includes('gfr')) return 'eGFR';
-    if (n.includes('uric')) return 'Uric acid';
-    if (n.includes('sgot') || n.includes('ast')) return 'SGOT';
-    if (n.includes('sgpt') || n.includes('alt')) return 'SGPT';
-    if (n.includes('alk') && n.includes('phos')) return 'Alk-phos';
+const masterData = labMasterData.lab_master_data as Record<string, { category_name: string; items: any[] }>;
+
+const aliasToDisplayName = new Map<string, string>();
+const displayNameToCategory = new Map<string, string>();
+const categoryOrder: string[] = [];
+
+for (const group of Object.values(masterData)) {
+    categoryOrder.push(group.category_name);
+
+    for (const item of group.items) {
+        const displayName: string = item.display_name;
+
+        displayNameToCategory.set(displayName.toLowerCase(), group.category_name);
+
+        aliasToDisplayName.set(displayName.toLowerCase(), displayName);
+        for (const alias of item.aliases as string[]) {
+            aliasToDisplayName.set(alias.toLowerCase(), displayName);
+        }
+    }
+}
+
+// ── Helpers ──
+
+export const normalizeMetricName = (name: string): string => {
+    const inputLower = name.trim().toLowerCase();
+
+    // Exact match (case-insensitive)
+    const exact = aliasToDisplayName.get(inputLower);
+    if (exact) return exact;
+
+    // Try with separators normalized (e.g. "HDL-C" vs "HDL C")
+    const cleaned = inputLower.replace(/[.\-_]/g, ' ').replace(/\s+/g, ' ').trim();
+    for (const [alias, displayName] of aliasToDisplayName) {
+        if (cleaned === alias.replace(/[.\-_]/g, ' ').replace(/\s+/g, ' ').trim()) {
+            return displayName;
+        }
+    }
+
     return name.charAt(0).toUpperCase() + name.slice(1);
 };
 
-const getCategory = (normalizedName: string) => {
-    const n = normalizedName.toLowerCase();
-    if (n === 'blood sugar' || n === 'hba1c' || n.includes('glucose')) return 'น้ำตาลในเลือด';
-    if (['bun', 'creatinine', 'egfr'].includes(n)) return 'การทำงานของไต';
-    if (n === 'uric acid') return 'กรดยูริค';
-    if (['cholesterol', 'triglyceride', 'hdl-c', 'ldl-c'].includes(n)) return 'ระดับไขมันในเลือด';
-    if (['sgot', 'sgpt', 'alk-phos'].includes(n)) return 'การทำงานของตับ';
-    return 'อื่นๆ';
+export const getCategory = (normalizedName: string): string => {
+    return displayNameToCategory.get(normalizedName.toLowerCase()) || 'อื่นๆ';
 };
+
+export { categoryOrder };
+
+// ── Sub-Components ──
 
 const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | null, isNormal: boolean }) => {
     if (!valueStr || valueStr === 'N/A') {
@@ -47,32 +69,30 @@ const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | null, isNorm
     return <div className={`text-xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{valueStr}</div>;
 };
 
-// --- Main Component ---
+// ── Main Component ──
 
-export default function AnalysisResult({ data, showAdvice = true }: { data: any, showAdvice?: boolean }) {
+export default function AnalysisResult({ data, showAdvice = true, showSummary = true }: { data: any, showAdvice?: boolean, showSummary?: boolean }) {
 
     if (!data) return null;
 
-    // 1. กำหนดหมวดหมู่หลัก (เอา "อื่นๆ" ออก)
-    const groupedStats: Record<string, any[]> = {
-        'น้ำตาลในเลือด': [],
-        'การทำงานของไต': [],
-        'กรดยูริค': [],
-        'ระดับไขมันในเลือด': [],
-        'การทำงานของตับ': []
-    };
+    // Build empty groups from metadata category order
+    const groupedStats: Record<string, any[]> = {};
+    for (const cat of categoryOrder) {
+        groupedStats[cat] = [];
+    }
 
     data.health_stats?.forEach((stat: any) => {
         const normalizedName = normalizeMetricName(stat.name);
-        const category = getCategory(normalizedName);
+        // Use AI-provided category if present, otherwise derive from name
+        const category = stat.category || getCategory(normalizedName);
 
-        // 2. เช็คว่าถ้า category ตรงกับ key ที่มีอยู่ค่อยใส่ (ถ้าเป็น 'อื่นๆ' มันจะหาไม่เจอและข้ามไปเอง)
-        if (groupedStats[category]) {
-            groupedStats[category].push({ ...stat, name: normalizedName });
+        if (!groupedStats[category]) {
+            groupedStats[category] = [];
         }
+        groupedStats[category].push({ ...stat, name: normalizedName });
     });
 
-    // ลบหมวดที่ไม่มีข้อมูล
+    // Remove empty categories
     Object.keys(groupedStats).forEach(key => {
         if (groupedStats[key].length === 0) delete groupedStats[key];
     });
@@ -81,13 +101,15 @@ export default function AnalysisResult({ data, showAdvice = true }: { data: any,
         <div className="space-y-8 animate-fade-in-up">
 
             {/* Summary Card */}
-            <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
-                <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 flex items-center gap-3 relative z-10">
-                    <div className="bg-black text-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl"><FileText size={20} className="sm:w-6 sm:h-6" /></div>
-                    สรุปผลภาพรวม
-                </h2>
-                <p className="text-gray-600 leading-relaxed text-base sm:text-lg relative z-10">{data.summary || "ไม่มีข้อมูลสรุป"}</p>
-            </div>
+            {showSummary && (
+                <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 flex items-center gap-3 relative z-10">
+                        <div className="bg-black text-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl"><FileText size={20} className="sm:w-6 sm:h-6" /></div>
+                        สรุปผลภาพรวม
+                    </h2>
+                    <p className="text-gray-600 leading-relaxed text-base sm:text-lg relative z-10">{data.summary || "ไม่มีข้อมูลสรุป"}</p>
+                </div>
+            )}
 
             {/* Grouped Stats Loop */}
             <div className="space-y-8">
@@ -115,10 +137,13 @@ export default function AnalysisResult({ data, showAdvice = true }: { data: any,
 
                                         <ValueDisplay valueStr={stat.value} isNormal={isNormal} />
 
-                                        {stat.ref_range &&
-                                            <p className="text-xs text-gray-400 mt-1">เกณฑ์: {stat.ref_range}</p>}
-                                        {stat.advice && !isNA &&
-                                            <p className="text-xs text-gray-500 mt-6 pt-6 border-t border-gray-100 line-clamp-2">{stat.advice}</p>}
+                                        {stat.normalRange && (stat.normalRange.min != null || stat.normalRange.max != null) && (
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                เกณฑ์: {stat.normalRange.min != null && stat.normalRange.max != null ? `${stat.normalRange.min} - ${stat.normalRange.max}` : stat.normalRange.min != null ? `≥ ${stat.normalRange.min}` : `≤ ${stat.normalRange.max}`}
+                                                {stat.unit && stat.unit != null && <span>{stat.unit}</span>}
+                                            </p>
+                                        )}
+                                        {stat.advice && !isNA && <p className="text-xs text-gray-500 mt-6 pt-6 border-t border-gray-100 line-clamp-2">{stat.advice}</p>}
                                     </div>
                                 );
                             })}
