@@ -84,6 +84,25 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
     const handleSave = async () => {
         if (!editedAnalysis) return;
 
+        // If only 'ข้อมูลทั่วไป' (hospitalName/examinationDate) changed, skip AI and save directly
+        const statsUnchanged = JSON.stringify(log.analysis.health_stats) === JSON.stringify(editedAnalysis.health_stats);
+        if (statsUnchanged) {
+            updateAnalysis({
+                userId,
+                logId: log.id,
+                analysis: editedAnalysis
+            }, {
+                onSuccess: () => {
+                    setIsEditing(false);
+                    alert("บันทึกข้อมูลเรียบร้อย");
+                },
+                onError: (err) => {
+                    alert("เกิดข้อผิดพลาด: " + (err as any).message);
+                }
+            });
+            return;
+        }
+
         // Build profile for AI re-analysis
         const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
         const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
@@ -272,6 +291,8 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         showYearDropdown
                                                         scrollableYearDropdown
                                                         yearDropdownItemNumber={100}
+                                                        portalId="root"
+                                                        popperClassName="!z-[200]"
                                                     />
                                                 </div>
                                             </div>
