@@ -4,7 +4,7 @@ import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, deleteObject } from "firebase/storage";
 import Navbar from "@/components/Navbar";
-import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, Clock, MapPin, Hospital, Image as ImageIcon, Maximize2 } from "lucide-react";
+import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, ChevronLeft, Clock, MapPin, Hospital, Image as ImageIcon, Maximize2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { differenceInYears, parseISO, format, isValid, parse } from "date-fns";
 import { th } from "date-fns/locale";
@@ -61,8 +61,21 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
     const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
     const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
     const [isReAnalyzing, setIsReAnalyzing] = useState(false);
-    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+    const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const touchStartX = useRef<number>(0);
+
+    useEffect(() => {
+        if (zoomedIndex === null) return;
+        const urls: string[] = log?.imageUrls || (log?.imageUrl ? [log.imageUrl] : []);
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") setZoomedIndex(i => (i !== null && i < urls.length - 1 ? i + 1 : i));
+            if (e.key === "ArrowLeft") setZoomedIndex(i => (i !== null && i > 0 ? i - 1 : i));
+            if (e.key === "Escape") setZoomedIndex(null);
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [zoomedIndex, log]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -366,7 +379,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                     {imageUrls.map((url: string, index: number) => (
                                         <div
                                             key={index}
-                                            onClick={() => setZoomedImage(url)}
+                                            onClick={() => setZoomedIndex(index)}
                                             className="relative group shrink-0 w-40 h-56 md:w-48 md:h-64 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-zoom-in snap-start"
                                         >
                                             <img
@@ -388,24 +401,61 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                 </div>
             </div>
 
-            {zoomedImage && (
+            {zoomedIndex !== null && (
                 <div
-                    className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
-                    onClick={() => setZoomedImage(null)}
+                    className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col animate-fade-in"
+                    onClick={() => setZoomedIndex(null)}
+                    onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+                    onTouchEnd={(e) => {
+                        const delta = e.changedTouches[0].clientX - touchStartX.current;
+                        if (Math.abs(delta) > 50) {
+                            if (delta < 0 && zoomedIndex < imageUrls.length - 1) setZoomedIndex(zoomedIndex + 1);
+                            else if (delta > 0 && zoomedIndex > 0) setZoomedIndex(zoomedIndex - 1);
+                        }
+                    }}
                 >
-                    <img
-                        src={zoomedImage}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-up"
-                        alt="Zoomed report"
-                    />
+                    {/* Close button */}
                     <button
-                        className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
-                        onClick={() => setZoomedImage(null)}
+                        className="absolute top-6 right-6 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                        onClick={() => setZoomedIndex(null)}
                     >
                         <X size={28} />
                     </button>
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10">
-                        คลิกที่ไหนก็ได้เพื่อปิด
+
+                    {/* Row: left arrow | image | right arrow */}
+                    <div className="flex-1 flex items-center gap-2 px-2 py-16 min-h-0">
+                        <div className="w-14 shrink-0 flex justify-center">
+                            {zoomedIndex > 0 && (
+                                <button
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                                    onClick={(e) => { e.stopPropagation(); setZoomedIndex(zoomedIndex - 1); }}
+                                >
+                                    <ChevronLeft size={28} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0 h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={imageUrls[zoomedIndex]}
+                                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-up"
+                                alt="Zoomed report"
+                            />
+                        </div>
+                        <div className="w-14 shrink-0 flex justify-center">
+                            {zoomedIndex < imageUrls.length - 1 && (
+                                <button
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                                    onClick={(e) => { e.stopPropagation(); setZoomedIndex(zoomedIndex + 1); }}
+                                >
+                                    <ChevronRight size={28} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Counter */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10 pointer-events-none">
+                        {imageUrls.length > 1 ? `${zoomedIndex + 1} / ${imageUrls.length}` : "คลิกที่ไหนก็ได้เพื่อปิด"}
                     </div>
                 </div>
             )}
@@ -959,7 +1009,7 @@ export default function SettingsPage() {
                                                                     <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-300 mt-1">
-                                                                    บันทึกเมื่อ {formatDate(log.createdAt, 'D MMM BBBB HH:mm')}
+                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM BBBB HH:mm')}
                                                                 </div>
                                                             </div>
                                                         </div>

@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 export interface HealthStatsData {
     name: string;
@@ -26,6 +26,7 @@ export interface HealthLog {
     imageUrls?: string[]; // New field for multiple images
     analysis: AnalysisData;
     createdAt: number;
+    updateAt: number;
     status: number;
     note?: string;
 }
@@ -47,6 +48,7 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
                     imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
+                    updateAt: data.updateAt?.toMillis ? data.updateAt.toMillis() : data.updateAt,
                     status: data.status,
                     note: data.note,
                 });
@@ -81,7 +83,7 @@ export const updateLogDate = async (userId: string, logId: string, newDate: numb
 };
 export const updateLogAnalysis = async (userId: string, logId: string, analysis: AnalysisData) => {
     const logRef = doc(db, "users", userId, "reports", logId);
-    await updateDoc(logRef, { analysis });
+    await updateDoc(logRef, { analysis, updateAt: serverTimestamp() });
 };
 
 export const updateLogNote = async (userId: string, logId: string, note: string) => {
