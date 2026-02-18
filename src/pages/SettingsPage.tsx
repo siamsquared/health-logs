@@ -173,7 +173,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                         {isReAnalyzing ? (
                                             <div key="reanalyzing-spinner" className="flex items-center gap-2">
                                                 <Loader2 size={16} className="animate-spin" />
-                                                <span>กำลังวิเคราะห์ AI...</span>
+                                                <span>AI กำลังวิเคราะห์...</span>
                                             </div>
                                         ) : isUpdating ? (
                                             <div key="updating-spinner" className="flex items-center gap-2">
