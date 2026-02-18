@@ -59,9 +59,12 @@ const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | nul
     }
     const match = String(valueStr).match(/^([\d.]+)\s*(.*)$/);
     if (match && !isNaN(parseFloat(match[1]))) {
+        const parts = match[1].split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const formattedNum = parts.join('.');
         return (
             <div className="flex items-baseline gap-1">
-                <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{match[1]}</span>
+                <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{formattedNum}</span>
                 <span className={`text-sm font-medium ${isNormal ? 'text-gray-500' : 'text-red-400'}`}>{match[2]}</span>
             </div>
         );

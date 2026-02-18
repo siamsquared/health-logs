@@ -319,13 +319,14 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                     <h3 className="text-xl font-bold text-gray-800 mb-8 px-2 border-l-4 border-black pl-3">{category}</h3>
                                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                         {items.map(({ stat, originalIndex }) => {
+                                                            const isNumber = stat.type === 'number';
                                                             const parseValue = (val: string) => {
                                                                 if (!val || val === "N/A") return { num: val || "", unit: "" };
                                                                 const match = val.match(/^([\d,.-]+)\s*(.*)$/);
                                                                 if (match) return { num: match[1], unit: match[2].trim() };
                                                                 return { num: val, unit: "" };
                                                             };
-                                                            const { num, unit } = parseValue(stat.value);
+                                                            const { num, unit } = isNumber ? parseValue(stat.value) : { num: "", unit: "" };
 
                                                             return (
                                                                 <div key={originalIndex}
@@ -336,18 +337,43 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
 
                                                                     {/* Editable value */}
                                                                     <div className="flex items-baseline gap-2 mb-2">
-                                                                        <input
-                                                                            type={stat.type}
-                                                                            value={num}
-                                                                            onChange={(e) => {
-                                                                                const newNum = e.target.value;
-                                                                                handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
-                                                                            }}
-                                                                            className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
-                                                                            placeholder="—"
-                                                                        />
-                                                                        {unit && (
-                                                                            <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                        {isNumber ? (
+                                                                            <>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    value={num}
+                                                                                    onChange={(e) => {
+                                                                                        let newNum = e.target.value;
+                                                                                        if (newNum.includes('.')) {
+                                                                                            const [intPart, decPart] = newNum.split('.');
+                                                                                            if (decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
+                                                                                        }
+                                                                                        handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                                    }}
+                                                                                    onBlur={(e) => {
+                                                                                        const parsed = parseFloat(e.target.value);
+                                                                                        if (isNaN(parsed)) return;
+                                                                                        const decimals = (e.target.value.split('.')[1] || '').length;
+                                                                                        const formatted = parsed.toFixed(Math.min(decimals, 4));
+                                                                                        handleStatChange(originalIndex, 'value', unit ? `${formatted} ${unit}` : formatted);
+                                                                                    }}
+                                                                                    step="0.0001"
+                                                                                    max="9999999"
+                                                                                    className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
+                                                                                    placeholder="—"
+                                                                                />
+                                                                                {unit && (
+                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            <input
+                                                                                type="text"
+                                                                                value={stat.value ?? ""}
+                                                                                onChange={(e) => handleStatChange(originalIndex, 'value', e.target.value)}
+                                                                                className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
+                                                                                placeholder="—"
+                                                                            />
                                                                         )}
                                                                     </div>
 
