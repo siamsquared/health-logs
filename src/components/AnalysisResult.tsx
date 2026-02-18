@@ -53,11 +53,11 @@ export { categoryOrder };
 
 // ── Sub-Components ──
 
-const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | null, isNormal: boolean }) => {
-    if (!valueStr || valueStr === 'N/A') {
+const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | null, isNormal: boolean }) => {
+    if (valueStr === null || valueStr === undefined || valueStr === 'N/A' || valueStr === '') {
         return <div className="text-3xl font-bold text-gray-200">N/A</div>;
     }
-    const match = valueStr.match(/^([\d.]+)\s*(.*)$/);
+    const match = String(valueStr).match(/^([\d.]+)\s*(.*)$/);
     if (match && !isNaN(parseFloat(match[1]))) {
         return (
             <div className="flex items-baseline gap-1">
@@ -66,7 +66,7 @@ const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | null, isNorm
             </div>
         );
     }
-    return <div className={`text-xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{valueStr}</div>;
+    return <div className={`text-xl font-bold truncate ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{String(valueStr)}</div>;
 };
 
 // ── Main Component ──
@@ -126,7 +126,7 @@ export default function AnalysisResult({ data, showAdvice = true, showSummary = 
                                         className={`p-6 rounded-[2rem] border transition duration-300 ${isNormal ? 'bg-white border-gray-100' : 'bg-red-50/50 border-red-100'}`}>
                                         <div className="flex justify-between mb-6">
                                             <span
-                                                className="font-semibold text-gray-500 text-sm truncate pr-2">{stat.name}</span>
+                                                className="font-semibold text-gray-500 text-sm truncate pr-2 min-w-0">{stat.name}</span>
                                             <span
                                                 className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wide flex-shrink-0 ${isNA ? 'bg-gray-100 text-gray-400' :
                                                     isNormal ? 'bg-green-50 text-green-700' : 'bg-red-100 text-red-700'

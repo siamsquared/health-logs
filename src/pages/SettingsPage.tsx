@@ -317,7 +317,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                 <div key={originalIndex}
                                                                     className="p-6 rounded-[2rem] border transition duration-300 bg-white border-gray-100">
                                                                     <div className="mb-4">
-                                                                        <span className="font-semibold text-gray-500 text-sm truncate pr-2">{stat.name}</span>
+                                                                        <span className="font-semibold text-gray-500 text-sm truncate block">{stat.name}</span>
                                                                     </div>
 
                                                                     {/* Editable value */}
