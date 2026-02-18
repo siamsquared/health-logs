@@ -1,4 +1,6 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FileText, Apple, Dumbbell } from "lucide-react";
 import labMasterData from "@/data/metadata.json";
 
@@ -52,6 +54,41 @@ export const getCategory = (normalizedName: string): string => {
 export { categoryOrder };
 
 // ── Sub-Components ──
+
+const AdviceTooltip = ({ text }: { text: string }) => {
+    const [visible, setVisible] = useState(false);
+    const [isClamped, setIsClamped] = useState(false);
+    const ref = useRef<HTMLParagraphElement>(null);
+    const [rect, setRect] = useState<DOMRect | null>(null);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (el) setIsClamped(el.scrollHeight > el.clientHeight);
+    }, [text]);
+
+    return (
+        <div className="mt-6 pt-6 border-t border-gray-100">
+            <p
+                ref={ref}
+                className="text-xs text-gray-500 line-clamp-2 cursor-default"
+                onMouseEnter={isClamped ? () => { setRect(ref.current?.getBoundingClientRect() ?? null); setVisible(true); } : undefined}
+                onMouseLeave={isClamped ? () => setVisible(false) : undefined}
+            >
+                {text}
+            </p>
+            {isClamped && visible && rect && createPortal(
+                <div
+                    className="fixed z-[9999] w-64 max-w-xs bg-gray-900 text-white text-xs rounded-2xl p-4 shadow-xl leading-relaxed pointer-events-none"
+                    style={{ top: rect.top - 8, left: rect.left, transform: 'translateY(-100%)' }}
+                >
+                    {text}
+                    <div className="absolute top-full left-4 border-[5px] border-transparent border-t-gray-900" />
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
 
 const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | null, isNormal: boolean }) => {
     if (valueStr === null || valueStr === undefined || valueStr === 'N/A' || valueStr === '') {
@@ -146,7 +183,7 @@ export default function AnalysisResult({ data, showAdvice = true, showSummary = 
                                                 {stat.unit && stat.unit != null && <span>{stat.unit}</span>}
                                             </p>
                                         )}
-                                        {stat.advice && !isNA && <p className="text-xs text-gray-500 mt-6 pt-6 border-t border-gray-100 line-clamp-2">{stat.advice}</p>}
+                                        {stat.advice && !isNA && <AdviceTooltip text={stat.advice} />}
                                     </div>
                                 );
                             })}
