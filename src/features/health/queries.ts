@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchLogs, deleteLog, updateLogDate, updateLogAnalysis, updateLogNote, HealthLog, AnalysisData } from "./api";
+import { fetchLogs, deleteLog, updateLogDate, updateLogAnalysis, updateLogNote, sortByExamDate, HealthLog, AnalysisData } from "./api";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
@@ -31,7 +31,7 @@ export const useHealthLogs = (userId: string | undefined) => {
                     });
                 }
             });
-            // Update the cache immediately with fresh data from Firestore
+            logs.sort(sortByExamDate);
             queryClient.setQueryData(["healthLogs", userId], logs);
         });
 

@@ -11,6 +11,7 @@ import { th } from "date-fns/locale";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useHealthLogs, useUpdateLogAnalysis } from "@/features/health/queries";
+import { sortByExamDate } from "@/features/health/api";
 import AnalysisResult, { normalizeMetricName, getCategory, categoryOrder } from "@/components/AnalysisResult";
 import { formatDate } from "@/lib/date";
 import { AnalysisData } from "@/features/health/api";
@@ -986,7 +987,7 @@ export default function SettingsPage() {
                                         </div>
                                     ) : logs && logs.length > 0 ? (
                                         <div className="grid gap-4">
-                                            {logs.map((log: any) => (
+                                            {[...logs].sort(sortByExamDate).map((log: any) => (
                                                 <div
                                                     key={log.id}
                                                     className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
