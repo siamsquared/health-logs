@@ -16,6 +16,7 @@
     "@types/react-datepicker": "^6.2.0",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
+    "cropperjs": "^1.6.2",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
     "firebase": "^12.7.0",
@@ -25,8 +26,10 @@
     "openai": "^6.15.0",
     "postcss": "^8.5.6",
     "react": "19.2.3",
+    "react-cropper": "^2.3.3",
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3",
+    "react-easy-crop": "^5.5.6",
     "recharts": "^3.6.0",
     "tailwindcss": "^3.4.1",
     "vite": "^7.3.1"

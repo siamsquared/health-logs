@@ -1,23 +1,33 @@
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
+export interface HealthStatsData {
+    name: string;
+    type: 'text' | 'number';
+    value: any;
+    unit?: string;
+    normalRange?: { min?: number; max?: number };
+    category: string;
+}
+
 export interface AnalysisData {
+    hospitalName?: string;
+    examinationDate?: string;
     summary: string;
-    health_stats: Array<{
-        name: string;
-        value: string;
-        ref_range: string;
-        status: string;
-    }>;
+    health_stats: Array<HealthStatsData>;
     recommendations: string[];
+    food_plan?: Record<string, string>;
+    exercise?: string;
+    general_advice?: string[];
 }
 
 export interface HealthLog {
     id: string;
-    imageUrl: string;
+    imageUrls?: string[]; // New field for multiple images
     analysis: AnalysisData;
     createdAt: number;
     status: number;
+    note?: string;
 }
 
 export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
@@ -34,10 +44,11 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
             if (data.status !== 0) {
                 logs.push({
                     id: doc.id,
-                    imageUrl: data.imageUrl,
+                    imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-                    status: data.status
+                    status: data.status,
+                    note: data.note,
                 });
             }
         });
@@ -55,10 +66,25 @@ export const deleteLog = async (userId: string, logId: string) => {
 
 export const updateLogDate = async (userId: string, logId: string, newDate: number) => {
     const logRef = doc(db, "users", userId, "reports", logId);
-    // Firestore stores timestamps often, but here we update createdAt.
-    // Ensure consistency with how you store it (millis or Timestamp).
-    // Previous logic seemed to use millis for local state but maybe Timestamp for Firestore?
-    // Let's stick to updateDoc. If existing data uses Timestamp, we might need to convert.
-    // For now, assuming standard update.
-    await updateDoc(logRef, { createdAt: newDate }); 
+
+    // Convert newDate (timestamp) to DD/MM/YYYY string for analysis.examinationDate
+    const dateObj = new Date(newDate);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const dateString = `${day}/${month}/${year}`;
+
+    await updateDoc(logRef, {
+        createdAt: newDate,
+        "analysis.examinationDate": dateString
+    });
+};
+export const updateLogAnalysis = async (userId: string, logId: string, analysis: AnalysisData) => {
+    const logRef = doc(db, "users", userId, "reports", logId);
+    await updateDoc(logRef, { analysis });
+};
+
+export const updateLogNote = async (userId: string, logId: string, note: string) => {
+    const logRef = doc(db, "users", userId, "reports", logId);
+    await updateDoc(logRef, { note });
 };

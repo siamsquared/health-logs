@@ -1,60 +1,93 @@
-import { useEffect, useState, useMemo, forwardRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/features/auth/useAuth";
-import { useHealthLogs, useUpdateLogDate, useDeleteLog } from "@/features/health/queries";
+import { useHealthLogs, useUpdateLogNote } from "@/features/health/queries";
 import Navbar from "@/components/Navbar";
-import AnalysisResult, { normalizeMetricName } from "@/components/AnalysisResult";
-import { TrendingUp, ChevronRight, Clock, Trash2, Edit2, Save, X, LayoutGrid, BarChart2, AlertCircle } from "lucide-react";
+import AnalysisResult from "@/components/AnalysisResult";
+import { ChevronDown, Clock, LayoutGrid, Pencil } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { formatDate } from "@/lib/date";
-import { parseISO, format, isValid } from "date-fns";
-import { th } from "date-fns/locale";
-import DatePicker, { registerLocale } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { formatDate, formatDateTime, formatRelativeTime } from "@/lib/date";
 
-registerLocale("th", th);
+// --- Sub-Components ---
 
-const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
-    const [displayValue, setDisplayValue] = useState(value || "");
+const NoteSection = ({ logId, initialNote }: { logId: string, initialNote?: string }) => {
+    const { user } = useAuth();
+    const [note, setNote] = useState(initialNote || "");
+    const [isEditing, setIsEditing] = useState(false);
+    const updateNote = useUpdateLogNote();
 
     useEffect(() => {
-        setDisplayValue(value || "");
-    }, [value]);
+        setNote(initialNote || "");
+    }, [initialNote]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
-        if (input.length > 4) {
-            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
-        } else if (input.length > 2) {
-            input = `${input.slice(0, 2)}/${input.slice(2)}`;
-        }
-        setDisplayValue(input);
-
-        // Pass to DatePicker's onChange
-        const originalValue = e.target.value;
-        e.target.value = input;
-        onChange(e);
-        e.target.value = originalValue;
+    const handleSave = () => {
+        if (!user) return;
+        updateNote.mutate({ userId: user.uid, logId, note }, {
+            onSuccess: () => {
+                setIsEditing(false);
+            }
+        });
     };
 
     return (
-        <input
-            ref={ref}
-            value={displayValue}
-            onClick={onClick}
-            onChange={handleChange}
-            className={className}
-            disabled={disabled}
-            placeholder={placeholder}
-            autoComplete="off"
-        />
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100/50 mb-6 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    📝 บันทึกเพิ่มเติม
+                </h3>
+                {!isEditing && (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="p-2 -mr-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-all"
+                        title="แก้ไขบันทึก"
+                    >
+                        <Pencil size={16} />
+                    </button>
+                )}
+            </div>
+
+            {isEditing ? (
+                <div className="space-y-3 animate-fade-in">
+                    <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="เขียนบันทึกของคุณที่นี่... (เช่น อาการที่พบ, คำแนะนำจากหมอเพิ่มเติม)"
+                        className="w-full min-h-[120px] p-4 rounded-2xl border border-gray-200 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black/20 transition-all resize-none text-base leading-relaxed bg-gray-50/50"
+                        autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={() => {
+                                setIsEditing(false);
+                                setNote(initialNote || "");
+                            }}
+                            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors hover:bg-gray-100 rounded-xl"
+                        >
+                            ยกเลิก
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={updateNote.isPending}
+                            className="px-6 py-2 text-sm bg-black text-white rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 font-medium shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transform hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            {updateNote.isPending ? (
+                                <span key="saving-text">กำลังบันทึก...</span>
+                            ) : (
+                                <span key="save-text">บันทึก</span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div
+                    onClick={() => setIsEditing(true)}
+                    className={`text-base leading-relaxed whitespace-pre-wrap cursor-pointer hover:bg-gray-50 -m-3 p-3 rounded-xl transition-all border border-transparent hover:border-gray-100 ${note ? 'text-gray-600' : 'text-gray-400 italic'}`}
+                >
+                    {note || "ยังไม่มีบันทึก... (กดเพื่อเพิ่มบันทึกช่วยจำ)"}
+                </div>
+            )}
+        </div>
     );
-});
-
-// --- Highcharts Imports ---
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
-
-// --- Sub-Components ---
+};
 
 const LogsSkeleton = () => (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-pulse">
@@ -64,147 +97,15 @@ const LogsSkeleton = () => (
     </div>
 );
 
-const getCategory = (normalizedName: string) => {
-    const n = normalizedName.toLowerCase();
-    if (n === 'blood sugar' || n === 'hba1c' || n.includes('glucose')) return 'น้ำตาลในเลือด';
-    if (['bun', 'creatinine', 'egfr'].includes(n)) return 'การทำงานของไต';
-    if (n === 'uric acid') return 'กรดยูริค';
-    if (['cholesterol', 'triglyceride', 'hdl-c', 'ldl-c'].includes(n)) return 'ระดับไขมันในเลือด';
-    if (['sgot', 'sgpt', 'alk-phos'].includes(n)) return 'การทำงานของตับ';
-    return 'อื่นๆ';
-};
-
-const TableValueDisplay = ({ valueStr, isNormal }: { valueStr: string, isNormal: boolean }) => {
-    const match = valueStr.match(/^([\d.]+)\s*(.*)$/);
-    if (match) {
-        return (
-            <div className="flex items-baseline justify-center gap-1">
-                <span className={`text-base ${isNormal ? 'text-gray-900 font-normal' : 'text-red-600 font-medium'}`}>{match[1]}</span>
-                <span className="text-[10px] text-gray-400 font-light">{match[2]}</span>
-            </div>
-        );
-    }
-    return <span className={`text-sm ${isNormal ? 'text-gray-900' : 'text-red-600 font-medium'}`}>{valueStr}</span>;
-};
-
-// --- Comparison Table ---
-const ComparisonTable = ({ logs }: { logs: any[] }) => {
-    const compareLogs = [...logs];
-    if (compareLogs.length < 2) return <div className="text-center py-10 text-gray-400">ต้องมีประวัติอย่างน้อย 2 ครั้งเพื่อเปรียบเทียบ</div>;
-
-    const allMetricNames = Array.from(new Set(
-        compareLogs.flatMap(log =>
-            log.analysis.health_stats?.map((s: any) => normalizeMetricName(s.name)) || []
-        )
-    ));
-
-    const groupedMetrics: Record<string, string[]> = {
-        'น้ำตาลในเลือด': [],
-        'การทำงานของไต': [],
-        'กรดยูริค': [],
-        'ระดับไขมันในเลือด': [],
-        'การทำงานของตับ': []
-    };
-
-    allMetricNames.forEach(name => {
-        const category = getCategory(name);
-        if (groupedMetrics[category]) {
-            groupedMetrics[category].push(name);
-        }
-    });
-
-    Object.keys(groupedMetrics).forEach(key => {
-        if (groupedMetrics[key].length === 0) delete groupedMetrics[key];
-    });
-
-    return (
-        <div className="bg-white rounded-[2rem] shadow-sm mb-6 border border-gray-100 overflow-hidden animate-fade-in relative">
-            <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-sm text-left border-collapse whitespace-nowrap">
-                    <thead>
-                        <tr className="bg-white border-b border-gray-100">
-                            {/* Sticky Header Column */}
-                            <th className="py-4 pl-6 pr-4 font-bold text-gray-900 min-w-[160px] sticky left-0 bg-white z-20 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] border-r border-gray-50">
-                                รายการตรวจ
-                            </th>
-                            {compareLogs.map((log, i) => (
-                                <th key={log.id} className={`py-4 px-6 font-bold min-w-[140px] text-center align-middle ${i === 0 ? 'bg-blue-50/30 text-blue-900' : 'text-gray-400'}`}>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xs uppercase tracking-wider mb-1 opacity-70">{i === 0 ? 'ล่าสุด' : 'ย้อนหลัง'}</span>
-                                        <span className="text-sm">{formatDate(log.createdAt, 'D MMM BB')}</span>
-                                    </div>
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {Object.entries(groupedMetrics).map(([category, metrics]) => (
-                            <>
-                                {/* Sticky Category */}
-                                <tr key={category} className="bg-black">
-                                    <td className="py-3 px-6 text-sm font-bold text-white sticky left-0 z-30 bg-black border-r border-gray-800 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.5)]">
-                                        {category}
-                                    </td>
-                                    {/* Fill rest with black */}
-                                    <td colSpan={compareLogs.length} className="bg-black"></td>
-                                </tr>
-
-                                {metrics.sort().map((metricName: string) => {
-                                    const refRange = compareLogs.flatMap(log => log.analysis.health_stats || [])
-                                        .find((s: any) => normalizeMetricName(s.name) === metricName)?.ref_range;
-
-                                    return (
-                                        <tr key={metricName} className="hover:bg-gray-50/50 transition group">
-                                            {/* Sticky Row Title */}
-                                            <td className="py-4 pl-6 pr-4 bg-white group-hover:bg-gray-50/50 sticky left-0 z-10 border-r border-gray-50 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
-                                                <div className="font-medium text-gray-700">{metricName}</div>
-                                                {refRange && (
-                                                    <div className="text-[10px] text-gray-400 font-light mt-0.5">
-                                                        เกณฑ์: {refRange}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            {compareLogs.map((log, i) => {
-                                                const stat = log.analysis.health_stats?.find((s: any) => normalizeMetricName(s.name) === metricName);
-                                                const isNormal = stat?.status === 'ปกติ';
-                                                const isNA = !stat || stat.value === 'N/A';
-
-                                                return (
-                                                    <td key={log.id} className={`py-4 px-6 text-center align-middle ${i === 0 ? 'bg-blue-50/10' : ''}`}>
-                                                        {stat && !isNA ? (
-                                                            <TableValueDisplay valueStr={stat.value} isNormal={isNormal} />
-                                                        ) : (
-                                                            <span className="text-gray-300 text-lg">-</span>
-                                                        )}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })}
-                            </>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
 // --- Main Page ---
 
 export default function LogsPage() {
     const { user, status: authStatus } = useAuth();
     const { data: logs, isLoading: logsLoading } = useHealthLogs(user?.uid);
-    const deleteLogMutation = useDeleteLog();
-    const updateLogDateMutation = useUpdateLogDate();
 
     const navigate = useNavigate();
 
     const [activeLogId, setActiveLogId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'detail' | 'compare'>('detail');
-    const [isEditing, setIsEditing] = useState(false);
-    const [editDate, setEditDate] = useState("");
 
     useEffect(() => { if (authStatus === "unauthenticated") navigate({ to: "/" }); }, [authStatus, navigate]);
 
@@ -218,293 +119,94 @@ export default function LogsPage() {
         return logs[0];
     }, [logs, activeLogId]);
 
-    // --- Highcharts Logic ---
-    const chartOptions = useMemo(() => {
-        if (!logs || logs.length === 0) return {};
-
-        const sortedLogs = [...logs].sort((a, b) => a.createdAt - b.createdAt);
-        const categories = sortedLogs.map(log => formatDate(log.createdAt, 'D MMM BB'));
-
-        const metricSet = new Set<string>();
-        sortedLogs.forEach(log => {
-            log.analysis.health_stats?.forEach((stat: any) => {
-                const name = normalizeMetricName(stat.name);
-                const category = getCategory(name);
-                if (category !== 'อื่นๆ' && stat.value && stat.value !== 'N/A') {
-                    const numValue = parseFloat(stat.value.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(numValue)) metricSet.add(name);
-                }
-            });
-        });
-
-        const series = Array.from(metricSet).map(metricName => {
-            const data = sortedLogs.map(log => {
-                const stat = log.analysis.health_stats?.find((s: any) => normalizeMetricName(s.name) === metricName);
-                if (stat && stat.value && stat.value !== 'N/A') {
-                    const numValue = parseFloat(stat.value.replace(/[^0-9.]/g, ''));
-                    return isNaN(numValue) ? null : numValue;
-                }
-                return null;
-            });
-            return {
-                name: metricName,
-                data,
-                marker: { enabled: false, symbol: 'circle' }
-            };
-        });
-
-        const standardColors = [
-            '#2563EB', '#DC2626', '#16A34A', '#EA580C', '#9333EA',
-            '#DB2777', '#0891B2', '#EAB308', '#4F46E5', '#0D9488'
-        ];
-
-        return {
-            chart: {
-                type: 'spline',
-                backgroundColor: 'transparent',
-                style: { fontFamily: 'inherit' }
-            },
-            title: { text: undefined },
-            xAxis: {
-                categories: categories,
-                crosshair: true,
-                lineColor: '#E5E7EB',
-                labels: {
-                    style: { color: '#9CA3AF', fontSize: '11px' },
-                    autoRotation: [-45]
-                }
-            },
-            yAxis: {
-                title: { text: null },
-                gridLineColor: '#F3F4F6',
-                labels: { style: { color: '#9CA3AF' } }
-            },
-            tooltip: {
-                shared: true,
-                useHTML: true,
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: 12,
-                shadow: true,
-                borderWidth: 0,
-                padding: 8,
-                style: { color: '#374151', fontSize: '10px' },
-                formatter: function (this: any) {
-                    const headerDate = (this.points && this.points[0]) ? this.points[0].key : this.x;
-                    let s = `<div style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: #111827;">${headerDate}</div>`;
-
-                    const groups: Record<string, any[]> = {};
-                    this.points.forEach((point: any) => {
-                        const category = getCategory(point.series.name);
-                        if (!groups[category]) groups[category] = [];
-                        groups[category].push(point);
-                    });
-
-                    const categoryOrder = [
-                        'น้ำตาลในเลือด', 'การทำงานของไต', 'กรดยูริค', 'ระดับไขมันในเลือด', 'การทำงานของตับ'
-                    ];
-
-                    categoryOrder.forEach(cat => {
-                        if (groups[cat]) {
-                            s += `<div style="margin-top: 4px; font-weight: bold; color: #9CA3AF; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #F3F4F6; padding-bottom: 2px; margin-bottom: 2px;">${cat}</div>`;
-                            groups[cat].forEach((p: any) => {
-                                s += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
-                                    <div style="display: flex; align-items: center; gap: 4px;">
-                                        <span style="color:${p.series.color}; font-size: 10px;">●</span>
-                                        <span style="color: #4B5563; font-size: 10px;">${p.series.name}</span>
-                                    </div>
-                                    <span style="font-weight: bold; color: #111827; font-size: 11px;">${p.y}</span>
-                                  </div>`;
-                            });
-                        }
-                    });
-                    return s;
-                }
-            },
-            plotOptions: {
-                series: {
-                    marker: { enabled: false, states: { hover: { enabled: true } } },
-                    lineWidth: 3
-                }
-            },
-            colors: standardColors,
-            credits: { enabled: false },
-            legend: {
-                itemStyle: { color: '#4B5563', fontWeight: 'normal', fontSize: '11px' },
-                itemHoverStyle: { color: '#000000' }
-            },
-            series: series
-        };
-    }, [logs]);
-
-    const handleSelectLog = (logId: string) => { setActiveLogId(logId); setIsEditing(false); setActiveTab('detail'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-    const startEdit = () => { if (!activeLog?.createdAt) return; setActiveLogId(activeLog.id); setEditDate(new Date(activeLog.createdAt).toLocaleDateString('en-CA')); setIsEditing(true); };
-
-    const saveDate = async () => {
-        if (!user || !editDate || !activeLog) return;
-
-        const today = new Date().toLocaleDateString('en-CA');
-        if (editDate > today) {
-            alert("วันที่ต้องไม่เป็นวันที่ในอนาคต");
-            return;
-        }
-
-        updateLogDateMutation.mutate({ userId: user.uid, logId: activeLog.id, newDate: new Date(editDate).getTime() });
-        setIsEditing(false);
-    };
-
-    const handleDelete = async () => {
-        if (!confirm("ยืนยันการลบ?")) return;
-        if (!user || !activeLog) return;
-        deleteLogMutation.mutate({ userId: user.uid, logId: activeLog.id });
-    };
+    const handleSelectLog = (logId: string) => { setActiveLogId(logId); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
     if (authStatus === "loading" || logsLoading) return <div className="min-h-screen bg-[#F5F5F7]"><Navbar /><LogsSkeleton /></div>;
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans">
+        <div className="min-h-screen min-h-dvh bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-6">
             <Navbar />
 
             <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in">
 
-                {/* Header */}
+                {/* Header Section: Identity of the record */}
                 {activeLog && activeLog.createdAt && (
-                    <div className="mb-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h1 className="text-3xl font-bold tracking-tight text-gray-900">ผลการตรวจ</h1>
-                                <div className="mt-2 flex items-center gap-3">
-                                    <Clock size={16} className="text-gray-500" />
-                                    {isEditing ? (
-                                        <div className="flex items-center gap-2 animate-fade-in">
-                                            <DatePicker
-                                                selected={editDate ? parseISO(editDate) : null}
-                                                onChange={(date: Date | null, event?: React.SyntheticEvent<any>) => {
-                                                    if (date && isValid(date)) {
-                                                        const year = date.getFullYear();
-                                                        const isCompleteTyped = event && (event.target as HTMLInputElement).value?.length === 10;
-                                                        const isPicked = !event;
-                                                        if (isPicked || isCompleteTyped || year > 1900) {
-                                                            setEditDate(format(date, "yyyy-MM-dd"));
-                                                        }
-                                                    } else if (event) {
-                                                        const target = event.target as HTMLInputElement;
-                                                        if (target.value === "") setEditDate("");
-                                                    }
-                                                }}
-                                                maxDate={new Date()}
-                                                dateFormat="dd/MM/yyyy"
-                                                placeholderText="วว/ดด/ปปปป"
-                                                locale="th"
-                                                autoComplete="off"
-                                                className="bg-white border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-black outline-none w-32"
-                                                customInput={<CustomDateInput />}
-                                                portalId="root"
-                                            />
-                                            <button onClick={saveDate} className="bg-green-600 text-white p-1.5 rounded-lg hover:bg-green-700 transition flex-shrink-0"><Save size={14} /></button>
-                                            <button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-600 p-1.5 rounded-lg hover:bg-gray-300 transition flex-shrink-0"><X size={14} /></button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-gray-500">ประจำวันที่ {formatDate(activeLog.createdAt, 'D MMMM BBBB')}</span>
-                                    )}
-                                </div>
-                            </div>
-                            {!isEditing && activeTab === 'detail' && (
-                                <div className="flex gap-2">
-                                    <button onClick={startEdit} className="p-2 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-black transition shadow-sm"><Edit2 size={16} /></button>
-                                    <button onClick={handleDelete} className="p-2 bg-red-50 border border-red-100 text-red-500 rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"><Trash2 size={16} /></button>
-                                </div>
-                            )}
+                    <div className="mb-4 px-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-4">ผลการตรวจ</h1>
+                        <div className="flex flex-col gap-1.5 sm:gap-2 text-gray-500">
+                            <span className="flex items-center gap-1.5 text-xs sm:text-sm">
+                                📅 วันที่รับการตรวจ {formatDate(activeLog.analysis?.examinationDate, 'D MMMM BBBB')}
+                                {(() => {
+                                    const examDate = activeLog.analysis?.examinationDate;
+                                    if (!examDate || examDate === 'N/A') return null;
+                                    const rel = formatRelativeTime(examDate);
+                                    return rel ? ` (${rel})` : "";
+                                })()}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs sm:text-sm">
+                                🏥 โรงพยาบาล {activeLog.analysis.hospitalName}
+                            </span>
                         </div>
                     </div>
                 )}
 
-                {/* Tab Menu */}
-                <div className="bg-gray-200/50 p-1 rounded-2xl flex gap-1 mb-8 max-w-md">
-                    <button onClick={() => setActiveTab('detail')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'detail' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><LayoutGrid size={16} /> รายละเอียด</button>
-                    <button onClick={() => setActiveTab('compare')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'compare' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}><BarChart2 size={16} /> เปรียบเทียบ</button>
-                </div>
+                {/* Control Row: Switcher for different records */}
+                {logs && logs.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 mb-4 border-y border-gray-200/60 bg-white/30 -mx-4 px-4 md:mx-0 md:rounded-2xl md:px-6">
+                        <div className="flex items-center gap-2 text-gray-900">
+                            <LayoutGrid size={18} className="text-black" />
+                            <span className="text-sm font-bold uppercase tracking-wide">ภาพรวมสุขภาพ</span>
+                        </div>
+
+                        <div className="relative group w-full md:w-72">
+                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-black transition-colors">
+                                <Clock size={16} />
+                            </div>
+                            <select
+                                value={activeLog?.id || ''}
+                                onChange={(e) => handleSelectLog(e.target.value)}
+                                className="w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-10 pr-10 rounded-2xl hover:border-gray-400 transition-all shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-black/5 text-sm font-medium"
+                            >
+                                {logs.map((log) => {
+                                    const dateValue = log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A'
+                                        ? log.analysis.examinationDate
+                                        : log.createdAt;
+                                    return (
+                                        <option key={log.id} value={log.id}>
+                                            รอบวันที่ {formatDate(dateValue, 'D MMM BBBB')}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-black transition-colors pointer-events-none">
+                                <ChevronDown size={14} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Content */}
                 {activeLog ? (
                     <div className="mb-12">
-                        {activeTab === 'detail' && <AnalysisResult data={activeLog.analysis} />}
-                        {activeTab === 'compare' && (
-                            <div className="space-y-6 animate-fade-in-up">
-                                {/* --- Highcharts Section --- */}
-                                {((logs || []).length > 1) && (
-                                    <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-gray-100">
-                                        <div className="flex items-center gap-2 mb-6">
-                                            <div className="bg-blue-50 p-2 rounded-full text-blue-600"><TrendingUp size={20} /></div>
-                                            <h2 className="font-bold text-lg text-gray-800">แนวโน้มสุขภาพ</h2>
-                                        </div>
-                                        <div className="w-full">
-                                            <HighchartsReact highcharts={Highcharts} options={chartOptions} />
-                                        </div>
-                                    </div>
-                                )}
 
-                                <ComparisonTable logs={logs || []} />
-                            </div>
-                        )}
+                        <AnalysisResult data={activeLog.analysis} />
+
+                        {/* Note Section */}
+                        <div className="mt-8">
+                            <NoteSection logId={activeLog.id} initialNote={activeLog.note} />
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center py-20 text-gray-400 bg-white rounded-[2rem] border border-dashed border-gray-200 mb-12">ยังไม่มีข้อมูลประวัติการตรวจสุขภาพ</div>
                 )}
 
-                {/* --- History List --- */}
-                {logs && logs.length > 0 && (
-                    <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-6 px-2">ประวัติย้อนหลัง</h3>
-                        <div className="space-y-4">
-                            {(logs || []).map((log) => {
-                                if (!log || !log.createdAt) return null;
-                                const isActive = activeLog?.id === log.id;
 
-                                const abnormalStats = log.analysis?.health_stats?.filter((s: any) => {
-                                    const name = normalizeMetricName(s.name);
-                                    const category = getCategory(name);
-                                    return s.status === 'ผิดปกติ' && category !== 'อื่นๆ';
-                                }) || [];
-
-                                return (
-                                    <div key={log.id} onClick={() => handleSelectLog(log.id)} className={`p-4 md:p-5 rounded-[1.5rem] transition cursor-pointer flex items-center justify-between group border ${isActive ? 'bg-black text-white shadow-lg ring-2 ring-offset-2 ring-gray-200 border-black' : 'bg-white text-gray-900 shadow-sm hover:shadow-md border-transparent hover:border-gray-200'}`}>
-                                        <div className="flex items-center gap-3 md:gap-5 overflow-hidden w-full">
-                                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-90'}`}>
-                                                <img src={log.imageUrl} alt="" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h3 className={`font-bold text-lg truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
-                                                    ผลการตรวจ {formatDate(log.createdAt, 'D MMM BB')}
-                                                </h3>
-
-                                                <p className={`text-sm truncate mb-1 ${isActive ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                    {log.analysis?.summary || "ไม่มีข้อมูลสรุป"}
-                                                </p>
-
-                                                {abnormalStats.length > 0 && (
-                                                    <div className={`flex flex-wrap items-center gap-1.5 mt-2 text-xs font-bold ${isActive ? 'text-red-300' : 'text-red-500'}`}>
-                                                        <div className="flex items-center gap-1 whitespace-nowrap">
-                                                            <AlertCircle size={12} strokeWidth={3} />
-                                                            <span>ผิดปกติ {abnormalStats.length} :</span>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {abnormalStats.map((stat: any, i: number) => (
-                                                                <span key={i} className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium border ${isActive ? 'bg-red-900/40 text-red-200 border-red-800' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                                                                    {normalizeMetricName(stat.name)}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className={`${isActive ? 'text-white' : 'text-gray-300'} transition flex-shrink-0 pl-2`}><ChevronRight /></div>
-                                    </div>
-                                )
-                            })}
-                        </div >
-                    </div >
+                {/* Footer Metadata */}
+                {activeLog && (
+                    <div className="mt-8 text-center">
+                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.createdAt)} น.</p>
+                    </div>
                 )}
             </div >
         </div >

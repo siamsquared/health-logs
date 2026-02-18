@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchLogs, deleteLog, updateLogDate, HealthLog } from "./api";
+import { fetchLogs, deleteLog, updateLogDate, updateLogAnalysis, updateLogNote, HealthLog, AnalysisData } from "./api";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
@@ -22,10 +22,11 @@ export const useHealthLogs = (userId: string | undefined) => {
                 if (data.status !== 0) {
                     logs.push({
                         id: doc.id,
-                        imageUrl: data.imageUrl,
+                        imageUrls: data.imageUrls || (data.imageUrl ? [data.imageUrl] : []),
                         analysis: data.analysis,
                         createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-                        status: data.status
+                        status: data.status,
+                        note: data.note,
                     });
                 }
             });
@@ -63,3 +64,24 @@ export const useUpdateLogDate = () => {
         },
     });
 };
+
+export const useUpdateLogAnalysis = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, logId, analysis }: { userId: string; logId: string; analysis: AnalysisData }) => updateLogAnalysis(userId, logId, analysis),
+        onSuccess: (_, { userId }) => {
+            queryClient.invalidateQueries({ queryKey: ["healthLogs", userId] });
+        },
+    });
+};
+
+export const useUpdateLogNote = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, logId, note }: { userId: string; logId: string; note: string }) => updateLogNote(userId, logId, note),
+        onSuccess: (_, { userId }) => {
+            queryClient.invalidateQueries({ queryKey: ["healthLogs", userId] });
+        },
+    });
+};
+
