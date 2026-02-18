@@ -271,6 +271,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholder="ระบุชื่อโรงพยาบาล"
+                                                        maxLength={100}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
