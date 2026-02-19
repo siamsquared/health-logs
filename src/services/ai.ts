@@ -138,7 +138,7 @@ export async function reAnalyzeFromData(healthStats: any[], profile: any) {
                     content: prompt,
                 },
             ],
-            max_tokens: 3500,
+            max_tokens: 5000,
         });
 
         const content = response.choices[0].message.content || "{}";
@@ -190,13 +190,37 @@ export async function analyzeImage(imageUrls: string | string[], profile: any) {
             - ถ้ามี normalRange_male / normalRange_female ให้ใช้ค่าตามเพศของผู้ตรวจจาก Profile
             - *สำคัญ:* หากผลการตรวจมีความสัมพันธ์กับ เพศ หรือ อายุ ให้ใช้ข้อมูล Profile ในการช่วยตัดสินใจหรือให้คำแนะนำที่เหมาะสมยิ่งขึ้น
 
-            *** 4. กรณีหาค่าไม่เจอ (Missing Value) - สำคัญ ***
-            - หากรายการไหนใน Standard "ไม่มีปรากฏในรูปภาพ" หรือ "อ่านค่าไม่ได้"
+            *** 4. รายการบังคับที่ต้องมีเสมอ (MANDATORY ITEMS) ***
+            ไม่ว่ารูปภาพจะมีรายการต่อไปนี้หรือไม่ก็ตาม ต้องระบุรายการเหล่านี้ครบทุกตัวใน health_stats เสมอ
+            หากไม่พบค่าในรูปภาพ ให้ใส่ value: "N/A" และ status: "ไม่ระบุ" ห้ามละเว้น:
+
+            กลุ่มปัสสาวะ (ปัสสาวะ (Urinalysis)):
+            - Color, Turbidity, pH, Protein, Sugar, Occult Blood, Crystal, Ketone
+
+            กลุ่มเลือด (กลุ่มเลือด (Complete Blood Count)):
+            - Hgb, WBC Count, RBC Count, Platelet Count
+
+            กลุ่มน้ำตาล (กลุ่มน้ำตาล (Glucose)):
+            - Glucose
+
+            กลุ่มไต (กลุ่มไต (Kidney Profile)):
+            - BUN, Creatinine, eGFR
+
+            กลุ่มไขมัน (กลุ่มไขมัน (Lipid Profile)):
+            - Cholesterol, HDL Chol, Triglyceride, LDL Chol / Calculate
+
+            กลุ่มตับ (กลุ่มตับ (Liver Profile)):
+            - SGOT, SGPT
+
+            CRITICAL: health_stats ต้องมีรายการบังคับทั้งหมด 24 รายการข้างต้นเสมอ ก่อนเพิ่มรายการอื่นๆ ที่พบในรูป
+
+            *** 5. กรณีหาค่าไม่เจอ (Missing Value) ***
+            - หากรายการใดใน MANDATORY ITEMS "ไม่มีปรากฏในรูปภาพ" หรือ "อ่านค่าไม่ได้"
             - ให้ระบุ value: "N/A"
             - ให้ระบุ status: "ไม่ระบุ"
             - ห้ามใส่ค่าเดา หรือข้อความอื่นลงใน value เด็ดขาด
 
-            *** 5. Output Structure (JSON Only) ***
+            *** 6. Output Structure (JSON Only) ***
             ตอบกลับเป็น JSON เท่านั้น ไม่ต้องมี Markdown:
             {
                 "hospitalName": "ชื่อโรงพยาบาลหรือคลินิกที่ระบุในใบตรวจ (หรือ 'N/A' ถ้าไม่มี)",
@@ -239,7 +263,7 @@ export async function analyzeImage(imageUrls: string | string[], profile: any) {
                     ],
                 },
             ],
-            max_tokens: 3500,
+            max_tokens: 5000,
         });
 
         const content = response.choices[0].message.content || "{}";
