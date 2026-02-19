@@ -118,20 +118,24 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
             return;
         }
 
-        // Build profile for AI re-analysis
-        const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
-        const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
-
         setIsReAnalyzing(true);
         try {
+            // Build profile for AI re-analysis
+            const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
+            const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
+
             // Run AI to re-calculate status, advice, summary, food_plan, exercise, general_advice
             const aiResult = await reAnalyzeFromData(editedAnalysis.health_stats, profile);
+
+            if (!aiResult || !Array.isArray(aiResult.health_stats)) {
+                throw new Error("AI returned invalid response");
+            }
 
             // Merge AI results with edited analysis (keep hospitalName & examinationDate from user edits)
             const updatedAnalysis: AnalysisData = {
                 ...editedAnalysis,
                 summary: aiResult.summary || editedAnalysis.summary,
-                health_stats: aiResult.health_stats || editedAnalysis.health_stats,
+                health_stats: aiResult.health_stats,
                 food_plan: aiResult.food_plan,
                 exercise: aiResult.exercise,
                 general_advice: aiResult.general_advice,
@@ -147,9 +151,9 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                     setIsReAnalyzing(false);
                     alert("บันทึกและวิเคราะห์ข้อมูลใหม่เรียบร้อย");
                 },
-                onError: (err) => {
+                onError: () => {
                     setIsReAnalyzing(false);
-                    alert("เกิดข้อผิดพลาด: " + (err as any).message);
+                    setShowAIError(true);
                 }
             });
         } catch (error) {
