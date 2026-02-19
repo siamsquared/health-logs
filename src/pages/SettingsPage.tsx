@@ -173,7 +173,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                         <div className="min-w-0">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">รายละเอียดผลการตรวจ</h2>
                             <div className="text-gray-500 text-xs sm:text-sm mt-3 sm:mt-4 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(log.analysis?.examinationDate, 'D MMMM BBBB') || 'ไม่ระบุวันที่'}</span>
+                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(log.analysis?.examinationDate, 'D MMMM YYYY') || 'ไม่ระบุวันที่'}</span>
                                 <span className="hidden sm:inline text-gray-300">•</span>
                                 <span className="flex items-center gap-1"><MapPin size={12} /> {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                             </div>
@@ -300,7 +300,6 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                             }
                                                         }}
                                                         dateFormat="dd/MM/yyyy"
-                                                        locale="th"
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
                                                         showYearDropdown
@@ -308,6 +307,8 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         yearDropdownItemNumber={100}
                                                         portalId="root"
                                                         popperClassName="!z-[200]"
+                                                        wrapperClassName="w-full"
+                                                        customInput={<CustomDateInput />}
                                                     />
                                                 </div>
                                             </div>
@@ -1030,7 +1031,7 @@ export default function SettingsPage() {
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
                                                                     <Clock size={14} className="text-gray-400 shrink-0" />
-                                                                    <span className="truncate">{formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM BBBB')}</span>
+                                                                    <span className="truncate">{formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM YYYY')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mt-0.5">
                                                                     <MapPin size={12} className="shrink-0" />
@@ -1160,7 +1161,7 @@ export default function SettingsPage() {
                             คุณแน่ใจหรือไม่ว่าต้องการลบรายงานผลตรวจสุขภาพนี้?
                         </p>
                         <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6">
-                            วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM BBBB')}
+                            วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM YYYY')}
                         </p>
                         <p className="text-[10px] sm:text-xs text-red-600 text-center mb-6 font-medium">
                             ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้ และจะลบรูปภาพที่เกี่ยวข้องทั้งหมด
