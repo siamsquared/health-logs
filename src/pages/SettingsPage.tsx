@@ -16,8 +16,23 @@ import AnalysisResult, { normalizeMetricName, getCategory, categoryOrder } from 
 import { formatDate } from "@/lib/date";
 import { AnalysisData } from "@/features/health/api";
 import { reAnalyzeFromData } from "@/services/ai";
+import labMasterData from "@/data/metadata.json";
 
 registerLocale("th", th);
+
+// Build a lookup: normalized stat name / alias → expected normal_value (text type only)
+const _master = (labMasterData as any).lab_master_data as Record<string, { items: any[] }>;
+const textExpectedValueMap: Record<string, string> = {};
+for (const group of Object.values(_master)) {
+    for (const item of group.items) {
+        if (item.normal_value) {
+            textExpectedValueMap[item.display_name.toLowerCase()] = item.normal_value;
+            for (const alias of (item.aliases || [])) {
+                textExpectedValueMap[(alias as string).toLowerCase()] = item.normal_value;
+            }
+        }
+    }
+}
 
 // --- Sub-components ---
 
@@ -374,13 +389,27 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                 )}
                                                                             </>
                                                                         ) : (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={stat.value ?? ""}
-                                                                                onChange={(e) => handleStatChange(originalIndex, 'value', e.target.value)}
-                                                                                className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
-                                                                                placeholder="—"
-                                                                            />
+                                                                            (() => {
+                                                                                const expectedVal = textExpectedValueMap[stat.name.toLowerCase()];
+                                                                                const currentVal = stat.value ?? "";
+                                                                                const isMismatch = !!expectedVal && currentVal !== "" && currentVal !== "N/A" && currentVal.toLowerCase() !== expectedVal.toLowerCase();
+                                                                                return (
+                                                                                    <div className="w-full">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={currentVal}
+                                                                                            onChange={(e) => handleStatChange(originalIndex, 'value', e.target.value)}
+                                                                                            className={`text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 focus:border-black ${isMismatch ? 'border-amber-400' : 'border-gray-200'}`}
+                                                                                            placeholder="—"
+                                                                                        />
+                                                                                        {isMismatch && (
+                                                                                            <p className="text-xs text-amber-500 mt-1.5 font-medium">
+                                                                                                ค่าที่ป้อนไม่ตรงกับค่าปกติที่คาดหวัง (ค่าปกติ: {expectedVal})
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            })()
                                                                         )}
                                                                     </div>
 
