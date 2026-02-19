@@ -21,8 +21,8 @@ const CompareSkeleton = () => (
     </div>
 );
 
-const TableValueDisplay = ({ valueStr, isNormal }: { valueStr: string, isNormal: boolean }) => {
-    const match = valueStr.match(/^([\d.]+)\s*(.*)$/);
+const TableValueDisplay = ({ valueStr, isNormal }: { valueStr: string | number, isNormal: boolean }) => {
+    const match = String(valueStr).match(/^([\d.]+)\s*(.*)$/);
     if (match) {
         return (
             <div className="flex items-baseline justify-center gap-1">
@@ -166,7 +166,7 @@ export default function ComparePage() {
                 const name = normalizeMetricName(stat.name);
                 const category = getCategory(name);
                 if (category !== 'อื่นๆ' && stat.value && stat.value !== 'N/A') {
-                    const numValue = parseFloat(stat.value.replace(/[^0-9.]/g, ''));
+                    const numValue = parseFloat(String(stat.value).replace(/[^0-9.]/g, ''));
                     if (!isNaN(numValue)) metricSet.add(name);
                 }
             });
@@ -176,7 +176,7 @@ export default function ComparePage() {
             const data = sortedLogs.map(log => {
                 const stat = log.analysis.health_stats?.find((s: any) => normalizeMetricName(s.name) === metricName);
                 if (stat && stat.value && stat.value !== 'N/A') {
-                    const numValue = parseFloat(stat.value.replace(/[^0-9.]/g, ''));
+                    const numValue = parseFloat(String(stat.value).replace(/[^0-9.]/g, ''));
                     return isNaN(numValue) ? null : numValue;
                 }
                 return null;

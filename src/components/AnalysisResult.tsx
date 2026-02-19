@@ -1,4 +1,6 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FileText, Apple, Dumbbell } from "lucide-react";
 import labMasterData from "@/data/metadata.json";
 
@@ -53,20 +55,58 @@ export { categoryOrder };
 
 // ── Sub-Components ──
 
-const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | null, isNormal: boolean }) => {
-    if (!valueStr || valueStr === 'N/A') {
+const AdviceTooltip = ({ text }: { text: string }) => {
+    const [visible, setVisible] = useState(false);
+    const [isClamped, setIsClamped] = useState(false);
+    const ref = useRef<HTMLParagraphElement>(null);
+    const [rect, setRect] = useState<DOMRect | null>(null);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (el) setIsClamped(el.scrollHeight > el.clientHeight);
+    }, [text]);
+
+    return (
+        <div className="mt-6 pt-6 border-t border-gray-100">
+            <p
+                ref={ref}
+                className="text-xs text-gray-500 line-clamp-2 cursor-default"
+                onMouseEnter={isClamped ? () => { setRect(ref.current?.getBoundingClientRect() ?? null); setVisible(true); } : undefined}
+                onMouseLeave={isClamped ? () => setVisible(false) : undefined}
+            >
+                {text}
+            </p>
+            {isClamped && visible && rect && createPortal(
+                <div
+                    className="fixed z-[9999] w-64 max-w-xs bg-gray-900 text-white text-xs rounded-2xl p-4 shadow-xl leading-relaxed pointer-events-none"
+                    style={{ top: rect.top - 8, left: rect.left, transform: 'translateY(-100%)' }}
+                >
+                    {text}
+                    <div className="absolute top-full left-4 border-[5px] border-transparent border-t-gray-900" />
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
+
+const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | null, isNormal: boolean }) => {
+    if (valueStr === null || valueStr === undefined || valueStr === 'N/A' || valueStr === '') {
         return <div className="text-3xl font-bold text-gray-200">N/A</div>;
     }
-    const match = valueStr.match(/^([\d.]+)\s*(.*)$/);
+    const match = String(valueStr).match(/^([\d.]+)\s*(.*)$/);
     if (match && !isNaN(parseFloat(match[1]))) {
+        const parts = match[1].split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const formattedNum = parts.join('.');
         return (
             <div className="flex items-baseline gap-1">
-                <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{match[1]}</span>
+                <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{formattedNum}</span>
                 <span className={`text-sm font-medium ${isNormal ? 'text-gray-500' : 'text-red-400'}`}>{match[2]}</span>
             </div>
         );
     }
-    return <div className={`text-xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{valueStr}</div>;
+    return <div className={`text-xl font-bold truncate ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{String(valueStr)}</div>;
 };
 
 // ── Main Component ──
@@ -126,7 +166,7 @@ export default function AnalysisResult({ data, showAdvice = true, showSummary = 
                                         className={`p-6 rounded-[2rem] border transition duration-300 ${isNormal ? 'bg-white border-gray-100' : 'bg-red-50/50 border-red-100'}`}>
                                         <div className="flex justify-between mb-6">
                                             <span
-                                                className="font-semibold text-gray-500 text-sm truncate pr-2">{stat.name}</span>
+                                                className="font-semibold text-gray-500 text-sm truncate pr-2 min-w-0">{stat.name}</span>
                                             <span
                                                 className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wide flex-shrink-0 ${isNA ? 'bg-gray-100 text-gray-400' :
                                                     isNormal ? 'bg-green-50 text-green-700' : 'bg-red-100 text-red-700'
@@ -143,7 +183,7 @@ export default function AnalysisResult({ data, showAdvice = true, showSummary = 
                                                 {stat.unit && stat.unit != null && <span>{stat.unit}</span>}
                                             </p>
                                         )}
-                                        {stat.advice && !isNA && <p className="text-xs text-gray-500 mt-6 pt-6 border-t border-gray-100 line-clamp-2">{stat.advice}</p>}
+                                        {stat.advice && !isNA && <AdviceTooltip text={stat.advice} />}
                                     </div>
                                 );
                             })}

@@ -1,58 +1,120 @@
 {
     "lab_master_data": {
-        "blood_chemistry": {
-            "category_name": "กลุ่มน้ำตาล",
+        "blood_cbc_group": {
+            "category_name": "กลุ่มเลือด (Complete Blood Count)",
             "items": [
                 {
-                    "id": "BS001",
-                    "display_name": "Blood Sugar",
-                    "aliases": ["Glucose", "FBS", "Sugar"],
+                    "id": "CBC001",
+                    "display_name": "Hgb",
+                    "aliases": ["Hgb", "Hemoglobin", "HGB", "Haemoglobin"],
+                    "unit": "g/dL",
+                    "normalRange_male": { "min": 13.5, "max": 17.5 },
+                    "normalRange_female": { "min": 12.0, "max": 15.5 }
+                },
+                {
+                    "id": "CBC002",
+                    "display_name": "WBC Count",
+                    "aliases": ["WBC Count", "WBC", "White Blood Cell", "White Blood Cell Count", "Leukocyte Count", "WBC Total"],
+                    "unit": "cells/μL",
+                    "normalRange": { "min": 4500, "max": 11000 }
+                },
+                {
+                    "id": "CBC003",
+                    "display_name": "RBC Count",
+                    "aliases": ["RBC Count", "RBC", "Red Blood Cell", "Red Blood Cell Count", "Erythrocyte Count", "RBC Total"],
+                    "unit": "million/μL",
+                    "normalRange_male": { "min": 4.5, "max": 5.9 },
+                    "normalRange_female": { "min": 4.1, "max": 5.1 }
+                },
+                {
+                    "id": "CBC004",
+                    "display_name": "Platelet Count",
+                    "aliases": ["Platelet Count", "Platelet", "PLT", "Thrombocyte", "Thrombocyte Count", "Plt"],
+                    "unit": "cells/μL",
+                    "normalRange": { "min": 150000, "max": 400000 }
+                }
+            ]
+        },
+        "glucose_group": {
+            "category_name": "กลุ่มน้ำตาล (Glucose)",
+            "items": [
+                {
+                    "id": "GL001",
+                    "display_name": "Glucose",
+                    "aliases": ["Glucose", "FBS", "Blood Sugar", "Fasting Blood Sugar", "FPG", "Blood Glucose", "BS", "Fasting Glucose"],
                     "unit": "mg/dL",
                     "normalRange": { "min": 70, "max": 99 }
                 }
             ]
         },
+        "kidney_profile_group": {
+            "category_name": "กลุ่มไต (Kidney Profile)",
+            "items": [
+                {
+                    "id": "KP001",
+                    "display_name": "BUN",
+                    "aliases": ["BUN", "Blood Urea Nitrogen", "Urea Nitrogen", "Urea", "BUN/Urea"],
+                    "unit": "mg/dL",
+                    "normalRange": { "min": 7, "max": 20 }
+                },
+                {
+                    "id": "KP002",
+                    "display_name": "Creatinine",
+                    "aliases": ["Creatinine", "Cr", "Serum Creatinine", "Creat", "SCr"],
+                    "unit": "mg/dL",
+                    "normalRange_male": { "min": 0.7, "max": 1.3 },
+                    "normalRange_female": { "min": 0.5, "max": 1.1 }
+                },
+                {
+                    "id": "KP003",
+                    "display_name": "eGFR",
+                    "aliases": ["eGFR", "GFR", "Estimated GFR", "Estimated Glomerular Filtration Rate", "EGFR", "eGFR (CKD-EPI)"],
+                    "unit": "mL/min/1.73m²",
+                    "normalRange": { "min": 60, "max": null }
+                }
+            ]
+        },
         "lipid_profile_group": {
-            "category_name": "กลุ่มไขมัน",
+            "category_name": "กลุ่มไขมัน (Lipid Profile)",
             "items": [
                 {
                     "id": "LP001",
-                    "display_name": "Total Cholesterol",
-                    "aliases": ["Cholesterol", "Total Chol"],
+                    "display_name": "Cholesterol",
+                    "aliases": ["Cholesterol", "Total Cholesterol", "Total Chol", "Chol", "TC"],
                     "unit": "mg/dL",
                     "normalRange": { "min": null, "max": 200 }
                 },
                 {
                     "id": "LP002",
-                    "display_name": "Triglyceride",
-                    "aliases": ["Triglyceride", "TG"],
-                    "unit": "mg/dL",
-                    "normalRange": { "min": null, "max": 150 }
-                },
-                {
-                    "id": "LP003",
-                    "display_name": "HDL-Cholesterol",
-                    "aliases": ["HDL", "HDL-C"],
+                    "display_name": "HDL Chol",
+                    "aliases": ["HDL Chol", "HDL", "HDL-C", "HDL-Cholesterol", "High Density Lipoprotein", "HDL Cholesterol"],
                     "unit": "mg/dL",
                     "normalRange_male": { "min": 40, "max": null },
                     "normalRange_female": { "min": 50, "max": null }
                 },
                 {
+                    "id": "LP003",
+                    "display_name": "Triglyceride",
+                    "aliases": ["Triglyceride", "TG", "Triglycerides", "TRIG", "Triacylglycerol"],
+                    "unit": "mg/dL",
+                    "normalRange": { "min": null, "max": 150 }
+                },
+                {
                     "id": "LP004",
-                    "display_name": "LDL-Cholesterol",
-                    "aliases": ["LDL", "LDL-C"],
+                    "display_name": "LDL Chol / Calculate",
+                    "aliases": ["LDL Chol / Calculate", "LDL", "LDL-C", "LDL-Cholesterol", "LDL Chol", "LDL Calculate", "LDL Cal", "Low Density Lipoprotein", "LDL Cholesterol"],
                     "unit": "mg/dL",
                     "normalRange": { "min": null, "max": 130 }
                 }
             ]
         },
         "liver_function_group": {
-            "category_name": "กลุ่มตับ",
+            "category_name": "กลุ่มตับ (Liver Profile)",
             "items": [
                 {
                     "id": "LFT001",
                     "display_name": "SGOT",
-                    "aliases": ["AST", "SGOT"],
+                    "aliases": ["SGOT", "AST", "Aspartate Aminotransferase", "Aspartate Transaminase"],
                     "unit": "U/L",
                     "normalRange_male": { "min": 0, "max": 40 },
                     "normalRange_female": { "min": 0, "max": 32 }
@@ -60,7 +122,7 @@
                 {
                     "id": "LFT002",
                     "display_name": "SGPT",
-                    "aliases": ["ALT", "SGPT"],
+                    "aliases": ["SGPT", "ALT", "Alanine Aminotransferase", "Alanine Transaminase"],
                     "unit": "U/L",
                     "normalRange_male": { "min": 0, "max": 41 },
                     "normalRange_female": { "min": 0, "max": 33 }
@@ -68,64 +130,79 @@
                 {
                     "id": "LFT003",
                     "display_name": "Alk-phos",
-                    "aliases": ["Alk-phos", "Alkaline Phosphatase"],
+                    "aliases": ["Alk-phos", "Alkaline Phosphatase", "ALP"],
                     "unit": "U/L",
                     "normalRange": { "min": 40, "max": 129 }
                 }
             ]
         },
         "urine_analysis_group": {
-            "category_name": "ปัสสาวะ (Urine Analysis)",
+            "category_name": "ปัสสาวะ (Urinalysis)",
             "items": [
                 {
                     "id": "UA001",
                     "display_name": "Color",
-                    "aliases": ["Color", "Urine Color"],
+                    "aliases": ["Color", "Urine Color", "Colour", "Urine Colour"],
                     "type": "string",
-                    "normal_value": "Yellow/Straw" },
+                    "normal_value": "Yellow/Straw"
+                },
                 {
                     "id": "UA002",
-                    "display_name": "Appearance",
-                    "aliases": ["Appearance", "Clarity"],
+                    "display_name": "Turbidity",
+                    "aliases": ["Turbidity", "Appearance", "Clarity", "Cloudiness", "Character", "Urine Appearance"],
                     "type": "string",
                     "normal_value": "Clear"
                 },
                 {
                     "id": "UA003",
-                    "display_name": "Sp.Gr.",
-                    "aliases": ["Specific Gravity", "Sp.Gr.", "SG"],
-                    "type": "number",
-                    "unit": null,
-                    "normalRange": { "min": 1.003, "max": 1.030 }
-                },
-                {
-                    "id": "UA004",
                     "display_name": "pH",
-                    "aliases": ["pH", "Urine pH"],
+                    "aliases": ["pH", "Urine pH", "UA pH"],
                     "type": "number",
                     "unit": null,
                     "normalRange": { "min": 4.5, "max": 8.0 }
                 },
                 {
-                    "id": "UA005",
+                    "id": "UA004",
                     "display_name": "Protein",
-                    "aliases": ["Protein", "Albumin", "UA Protein"],
+                    "aliases": ["Protein", "Albumin", "UA Protein", "Urine Protein", "PRO"],
+                    "type": "string",
+                    "normal_value": "Negative"
+                },
+                {
+                    "id": "UA005",
+                    "display_name": "Sugar",
+                    "aliases": ["Sugar", "Urine Sugar", "Urine Glucose", "GLU", "Glucose (UA)", "UA Glucose", "UA Sugar"],
                     "type": "string",
                     "normal_value": "Negative"
                 },
                 {
                     "id": "UA006",
-                    "display_name": "Ketone",
-                    "aliases": ["Ketone"],
+                    "display_name": "Occult Blood",
+                    "aliases": ["Occult Blood", "Blood", "OB", "Hematuria", "Urine Blood", "UA Blood", "BLD"],
                     "type": "string",
                     "normal_value": "Negative"
                 },
                 {
                     "id": "UA007",
-                    "display_name": "Blood",
-                    "aliases": ["Blood"],
+                    "display_name": "Crystal",
+                    "aliases": ["Crystal", "Crystals", "Urine Crystal", "CRY"],
+                    "type": "string",
+                    "normal_value": "Not Found"
+                },
+                {
+                    "id": "UA008",
+                    "display_name": "Ketone",
+                    "aliases": ["Ketone", "Ketones", "Acetone", "KET"],
                     "type": "string",
                     "normal_value": "Negative"
+                },
+                {
+                    "id": "UA009",
+                    "display_name": "Sp.Gr.",
+                    "aliases": ["Specific Gravity", "Sp.Gr.", "SG", "SpGr", "S.G."],
+                    "type": "number",
+                    "unit": null,
+                    "normalRange": { "min": 1.003, "max": 1.030 }
                 }
             ]
         },
@@ -134,34 +211,29 @@
             "items": [
                 {
                     "id": "SE001",
-                    "display_name": "WBC",
-                    "description": "จำนวนเม็ดเลือดขาวรวม ใช้ประเมินการติดเชื้อและระบบภูมิคุ้มกัน",
-                    "aliases": ["WBC", "White Blood Cell"],
-                    "type": "number",
-                    "unit": "cells/μL",
-                    "normalRange": { "min": 4500, "max": 11000 }
+                    "display_name": "Stool WBC",
+                    "aliases": ["Stool WBC", "WBC (Stool)", "Fecal WBC"],
+                    "type": "string",
+                    "normal_value": "Not Found"
                 },
                 {
                     "id": "SE002",
-                    "display_name": "RBC",
-                    "description": "จำนวนเม็ดเลือดแดง ใช้ประเมินภาวะโลหิตจางและการขนส่งออกซิเจน",
-                    "aliases": ["RBC", "Red Blood Cell", "Occult Blood", "OB", "Fecal Occult Blood"],
-                    "type": "number",
-                    "unit": "million/μL",
-                    "normalRange_male": { "min": 4.5, "max": 5.9 },
-                    "normalRange_female": { "min": 4.1, "max": 5.1 }
+                    "display_name": "Stool RBC",
+                    "aliases": ["Stool RBC", "RBC (Stool)", "Fecal RBC"],
+                    "type": "string",
+                    "normal_value": "Not Found"
                 },
                 {
                     "id": "SE003",
                     "display_name": "Parasite",
-                    "aliases": ["Parasite"],
+                    "aliases": ["Parasite", "Parasites", "Ova and Parasite", "O&P"],
                     "type": "string",
                     "normal_value": "Not Found"
                 },
                 {
                     "id": "SE004",
-                    "display_name": "Occult Blood",
-                    "aliases": ["Occult Blood"],
+                    "display_name": "Fecal Occult Blood",
+                    "aliases": ["Fecal Occult Blood", "FOB", "Stool Occult Blood", "Stool OB", "Fecal OB"],
                     "type": "string",
                     "normal_value": "Negative"
                 }

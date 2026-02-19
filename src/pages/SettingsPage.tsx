@@ -4,19 +4,35 @@ import { doc, setDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, deleteObject } from "firebase/storage";
 import Navbar from "@/components/Navbar";
-import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, Clock, MapPin, Hospital, Image as ImageIcon, Maximize2 } from "lucide-react";
+import { Save, Loader2, Calendar, Edit2, X, ChevronDown, User, Database, Plus, Trash2, FileText, ChevronRight, ChevronLeft, Clock, MapPin, Hospital, Image as ImageIcon, Maximize2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { differenceInYears, parseISO, format, isValid, parse } from "date-fns";
 import { th } from "date-fns/locale";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useHealthLogs, useUpdateLogAnalysis } from "@/features/health/queries";
+import { sortByExamDate } from "@/features/health/api";
 import AnalysisResult, { normalizeMetricName, getCategory, categoryOrder } from "@/components/AnalysisResult";
 import { formatDate } from "@/lib/date";
 import { AnalysisData } from "@/features/health/api";
 import { reAnalyzeFromData } from "@/services/ai";
+import labMasterData from "@/data/metadata.json";
 
 registerLocale("th", th);
+
+// Build a lookup: normalized stat name / alias → expected normal_value (text type only)
+const _master = (labMasterData as any).lab_master_data as Record<string, { items: any[] }>;
+const textExpectedValueMap: Record<string, string> = {};
+for (const group of Object.values(_master)) {
+    for (const item of group.items) {
+        if (item.normal_value) {
+            textExpectedValueMap[item.display_name.toLowerCase()] = item.normal_value;
+            for (const alias of (item.aliases || [])) {
+                textExpectedValueMap[(alias as string).toLowerCase()] = item.normal_value;
+            }
+        }
+    }
+}
 
 // --- Sub-components ---
 
@@ -61,8 +77,22 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
     const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
     const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
     const [isReAnalyzing, setIsReAnalyzing] = useState(false);
-    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+    const [showAIError, setShowAIError] = useState(false);
+    const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const touchStartX = useRef<number>(0);
+
+    useEffect(() => {
+        if (zoomedIndex === null) return;
+        const urls: string[] = log?.imageUrls || (log?.imageUrl ? [log.imageUrl] : []);
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === "ArrowRight") setZoomedIndex(i => (i !== null && i < urls.length - 1 ? i + 1 : i));
+            if (e.key === "ArrowLeft") setZoomedIndex(i => (i !== null && i > 0 ? i - 1 : i));
+            if (e.key === "Escape") setZoomedIndex(null);
+        };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [zoomedIndex, log]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -84,20 +114,43 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
     const handleSave = async () => {
         if (!editedAnalysis) return;
 
-        // Build profile for AI re-analysis
-        const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
-        const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
+        // If only 'ข้อมูลทั่วไป' (hospitalName/examinationDate) changed, skip AI and save directly
+        const statsUnchanged = JSON.stringify(log.analysis.health_stats) === JSON.stringify(editedAnalysis.health_stats);
+        if (statsUnchanged) {
+            updateAnalysis({
+                userId,
+                logId: log.id,
+                analysis: editedAnalysis
+            }, {
+                onSuccess: () => {
+                    setIsEditing(false);
+                    alert("บันทึกข้อมูลเรียบร้อย");
+                },
+                onError: (err) => {
+                    alert("เกิดข้อผิดพลาด: " + (err as any).message);
+                }
+            });
+            return;
+        }
 
         setIsReAnalyzing(true);
         try {
+            // Build profile for AI re-analysis
+            const age = user?.birthDate ? differenceInYears(new Date(), parseISO(user.birthDate)) : undefined;
+            const profile = { gender: user?.gender, age, weight: user?.weight, height: user?.height, chronic_diseases: user?.chronic_diseases, allergies: user?.allergies };
+
             // Run AI to re-calculate status, advice, summary, food_plan, exercise, general_advice
             const aiResult = await reAnalyzeFromData(editedAnalysis.health_stats, profile);
+
+            if (!aiResult || !Array.isArray(aiResult.health_stats)) {
+                throw new Error("AI returned invalid response");
+            }
 
             // Merge AI results with edited analysis (keep hospitalName & examinationDate from user edits)
             const updatedAnalysis: AnalysisData = {
                 ...editedAnalysis,
                 summary: aiResult.summary || editedAnalysis.summary,
-                health_stats: aiResult.health_stats || editedAnalysis.health_stats,
+                health_stats: aiResult.health_stats,
                 food_plan: aiResult.food_plan,
                 exercise: aiResult.exercise,
                 general_advice: aiResult.general_advice,
@@ -113,14 +166,14 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                     setIsReAnalyzing(false);
                     alert("บันทึกและวิเคราะห์ข้อมูลใหม่เรียบร้อย");
                 },
-                onError: (err) => {
+                onError: () => {
                     setIsReAnalyzing(false);
-                    alert("เกิดข้อผิดพลาด: " + (err as any).message);
+                    setShowAIError(true);
                 }
             });
         } catch (error) {
             setIsReAnalyzing(false);
-            alert("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + (error as any).message);
+            setShowAIError(true);
         }
     };
 
@@ -140,7 +193,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                         <div className="min-w-0">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">รายละเอียดผลการตรวจ</h2>
                             <div className="text-gray-500 text-xs sm:text-sm mt-3 sm:mt-4 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(log.analysis?.examinationDate, 'D MMMM BBBB') || 'ไม่ระบุวันที่'}</span>
+                                <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(log.analysis?.examinationDate, 'D MMMM YYYY') || 'ไม่ระบุวันที่'}</span>
                                 <span className="hidden sm:inline text-gray-300">•</span>
                                 <span className="flex items-center gap-1"><MapPin size={12} /> {log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                             </div>
@@ -173,7 +226,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                         {isReAnalyzing ? (
                                             <div key="reanalyzing-spinner" className="flex items-center gap-2">
                                                 <Loader2 size={16} className="animate-spin" />
-                                                <span>กำลังวิเคราะห์ AI...</span>
+                                                <span>AI กำลังวิเคราะห์...</span>
                                             </div>
                                         ) : isUpdating ? (
                                             <div key="updating-spinner" className="flex items-center gap-2">
@@ -238,6 +291,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         onChange={(e) => setEditedAnalysis({ ...editedAnalysis, hospitalName: e.target.value })}
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholder="ระบุชื่อโรงพยาบาล"
+                                                        maxLength={100}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -266,12 +320,15 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                             }
                                                         }}
                                                         dateFormat="dd/MM/yyyy"
-                                                        locale="th"
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
                                                         showYearDropdown
                                                         scrollableYearDropdown
                                                         yearDropdownItemNumber={100}
+                                                        portalId="root"
+                                                        popperClassName="!z-[200]"
+                                                        wrapperClassName="w-full"
+                                                        customInput={<CustomDateInput />}
                                                     />
                                                 </div>
                                             </div>
@@ -284,35 +341,75 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                     <h3 className="text-xl font-bold text-gray-800 mb-8 px-2 border-l-4 border-black pl-3">{category}</h3>
                                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                         {items.map(({ stat, originalIndex }) => {
+                                                            const isNumber = stat.type === 'number';
                                                             const parseValue = (val: string) => {
                                                                 if (!val || val === "N/A") return { num: val || "", unit: "" };
                                                                 const match = val.match(/^([\d,.-]+)\s*(.*)$/);
                                                                 if (match) return { num: match[1], unit: match[2].trim() };
                                                                 return { num: val, unit: "" };
                                                             };
-                                                            const { num, unit } = parseValue(stat.value);
+                                                            const { num, unit } = isNumber ? parseValue(stat.value) : { num: "", unit: "" };
 
                                                             return (
                                                                 <div key={originalIndex}
                                                                     className="p-6 rounded-[2rem] border transition duration-300 bg-white border-gray-100">
                                                                     <div className="mb-4">
-                                                                        <span className="font-semibold text-gray-500 text-sm truncate pr-2">{stat.name}</span>
+                                                                        <span className="font-semibold text-gray-500 text-sm truncate block">{stat.name}</span>
                                                                     </div>
 
                                                                     {/* Editable value */}
                                                                     <div className="flex items-baseline gap-2 mb-2">
-                                                                        <input
-                                                                            type={stat.type}
-                                                                            value={num}
-                                                                            onChange={(e) => {
-                                                                                const newNum = e.target.value;
-                                                                                handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
-                                                                            }}
-                                                                            className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
-                                                                            placeholder="—"
-                                                                        />
-                                                                        {unit && (
-                                                                            <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                        {isNumber ? (
+                                                                            <>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    value={num}
+                                                                                    onChange={(e) => {
+                                                                                        let newNum = e.target.value;
+                                                                                        if (newNum.includes('.')) {
+                                                                                            const [intPart, decPart] = newNum.split('.');
+                                                                                            if (decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
+                                                                                        }
+                                                                                        handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                                    }}
+                                                                                    onBlur={(e) => {
+                                                                                        const parsed = parseFloat(e.target.value);
+                                                                                        if (isNaN(parsed)) return;
+                                                                                        const decimals = (e.target.value.split('.')[1] || '').length;
+                                                                                        const formatted = parsed.toFixed(Math.min(decimals, 4));
+                                                                                        handleStatChange(originalIndex, 'value', unit ? `${formatted} ${unit}` : formatted);
+                                                                                    }}
+                                                                                    step="0.0001"
+                                                                                    max="9999999"
+                                                                                    className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
+                                                                                    placeholder="—"
+                                                                                />
+                                                                                {unit && (
+                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            (() => {
+                                                                                const expectedVal = textExpectedValueMap[stat.name.toLowerCase()];
+                                                                                const currentVal = stat.value ?? "";
+                                                                                const isMismatch = !!expectedVal && currentVal !== "" && currentVal !== "N/A" && currentVal.toLowerCase() !== expectedVal.toLowerCase();
+                                                                                return (
+                                                                                    <div className="w-full">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={currentVal}
+                                                                                            onChange={(e) => handleStatChange(originalIndex, 'value', e.target.value)}
+                                                                                            className={`text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 focus:border-black ${isMismatch ? 'border-amber-400' : 'border-gray-200'}`}
+                                                                                            placeholder="—"
+                                                                                        />
+                                                                                        {isMismatch && (
+                                                                                            <p className="text-xs text-amber-500 mt-1.5 font-medium">
+                                                                                                ค่าที่ป้อนไม่ตรงกับค่าปกติที่คาดหวัง (ค่าปกติ: {expectedVal})
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            })()
                                                                         )}
                                                                     </div>
 
@@ -345,7 +442,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                     {imageUrls.map((url: string, index: number) => (
                                         <div
                                             key={index}
-                                            onClick={() => setZoomedImage(url)}
+                                            onClick={() => setZoomedIndex(index)}
                                             className="relative group shrink-0 w-40 h-56 md:w-48 md:h-64 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-zoom-in snap-start"
                                         >
                                             <img
@@ -367,24 +464,78 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                 </div>
             </div>
 
-            {zoomedImage && (
+            {zoomedIndex !== null && (
                 <div
-                    className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
-                    onClick={() => setZoomedImage(null)}
+                    className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col animate-fade-in"
+                    onClick={() => setZoomedIndex(null)}
+                    onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+                    onTouchEnd={(e) => {
+                        const delta = e.changedTouches[0].clientX - touchStartX.current;
+                        if (Math.abs(delta) > 50) {
+                            if (delta < 0 && zoomedIndex < imageUrls.length - 1) setZoomedIndex(zoomedIndex + 1);
+                            else if (delta > 0 && zoomedIndex > 0) setZoomedIndex(zoomedIndex - 1);
+                        }
+                    }}
                 >
-                    <img
-                        src={zoomedImage}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-up"
-                        alt="Zoomed report"
-                    />
+                    {/* Close button */}
                     <button
-                        className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
-                        onClick={() => setZoomedImage(null)}
+                        className="absolute top-6 right-6 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                        onClick={() => setZoomedIndex(null)}
                     >
                         <X size={28} />
                     </button>
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10">
-                        คลิกที่ไหนก็ได้เพื่อปิด
+
+                    {/* Row: left arrow | image | right arrow */}
+                    <div className="flex-1 flex items-center gap-2 px-2 py-16 min-h-0">
+                        <div className="w-14 shrink-0 flex justify-center">
+                            {zoomedIndex > 0 && (
+                                <button
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                                    onClick={(e) => { e.stopPropagation(); setZoomedIndex(zoomedIndex - 1); }}
+                                >
+                                    <ChevronLeft size={28} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0 h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={imageUrls[zoomedIndex]}
+                                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-scale-up"
+                                alt="Zoomed report"
+                            />
+                        </div>
+                        <div className="w-14 shrink-0 flex justify-center">
+                            {zoomedIndex < imageUrls.length - 1 && (
+                                <button
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white"
+                                    onClick={(e) => { e.stopPropagation(); setZoomedIndex(zoomedIndex + 1); }}
+                                >
+                                    <ChevronRight size={28} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Counter */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10 pointer-events-none">
+                        {imageUrls.length > 1 ? `${zoomedIndex + 1} / ${imageUrls.length}` : "คลิกที่ไหนก็ได้เพื่อปิด"}
+                    </div>
+                </div>
+            )}
+
+            {/* AI Error Popup */}
+            {showAIError && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-8 animate-scale-up">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 text-center mb-2">เกิดข้อผิดพลาดในการวิเคราะห์</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">กรุณาลองใหม่อีกครั้ง</p>
+                        <button
+                            type="button"
+                            onClick={() => setShowAIError(false)}
+                            className="w-full bg-black hover:bg-gray-800 text-white py-3 rounded-xl font-bold transition text-sm"
+                        >
+                            ตกลง
+                        </button>
                     </div>
                 </div>
             )}
@@ -915,7 +1066,7 @@ export default function SettingsPage() {
                                         </div>
                                     ) : logs && logs.length > 0 ? (
                                         <div className="grid gap-4">
-                                            {logs.map((log: any) => (
+                                            {[...logs].sort(sortByExamDate).map((log: any) => (
                                                 <div
                                                     key={log.id}
                                                     className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
@@ -931,14 +1082,14 @@ export default function SettingsPage() {
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
                                                                     <Clock size={14} className="text-gray-400 shrink-0" />
-                                                                    <span className="truncate">{formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM BBBB')}</span>
+                                                                    <span className="truncate">{formatDate(log.analysis?.examinationDate || log.createdAt, 'D MMMM YYYY')}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mt-0.5">
                                                                     <MapPin size={12} className="shrink-0" />
                                                                     <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-300 mt-1">
-                                                                    บันทึกเมื่อ {formatDate(log.createdAt, 'D MMM BBBB HH:mm')}
+                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM BBBB HH:mm')}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1061,7 +1212,7 @@ export default function SettingsPage() {
                             คุณแน่ใจหรือไม่ว่าต้องการลบรายงานผลตรวจสุขภาพนี้?
                         </p>
                         <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-6">
-                            วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM BBBB')}
+                            วันที่: {formatDate(logToDelete.analysis?.examinationDate || logToDelete.createdAt, 'D MMMM YYYY')}
                         </p>
                         <p className="text-[10px] sm:text-xs text-red-600 text-center mb-6 font-medium">
                             ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้ และจะลบรูปภาพที่เกี่ยวข้องทั้งหมด
