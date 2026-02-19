@@ -17,7 +17,7 @@
             "items": [
                 {
                     "id": "LP001",
-                    "display_name": "Total Cholesterol",
+                    "display_name": "Cholesterol",
                     "aliases": ["Cholesterol", "Total Chol"],
                     "unit": "mg/dL",
                     "normalRange": { "min": null, "max": 200 }

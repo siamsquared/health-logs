@@ -62,6 +62,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
     const [editedAnalysis, setEditedAnalysis] = useState<AnalysisData | null>(null);
     const { mutate: updateAnalysis, isPending: isUpdating } = useUpdateLogAnalysis();
     const [isReAnalyzing, setIsReAnalyzing] = useState(false);
+    const [showAIError, setShowAIError] = useState(false);
     const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef<number>(0);
@@ -153,7 +154,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
             });
         } catch (error) {
             setIsReAnalyzing(false);
-            alert("เกิดข้อผิดพลาดในการวิเคราะห์ AI: " + (error as any).message);
+            setShowAIError(true);
         }
     };
 
@@ -485,6 +486,23 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                     {/* Counter */}
                     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium bg-black/40 px-4 py-2 rounded-full border border-white/10 pointer-events-none">
                         {imageUrls.length > 1 ? `${zoomedIndex + 1} / ${imageUrls.length}` : "คลิกที่ไหนก็ได้เพื่อปิด"}
+                    </div>
+                </div>
+            )}
+
+            {/* AI Error Popup */}
+            {showAIError && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-6 sm:p-8 animate-scale-up">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 text-center mb-2">เกิดข้อผิดพลาดในการวิเคราะห์</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">กรุณาลองใหม่อีกครั้ง</p>
+                        <button
+                            type="button"
+                            onClick={() => setShowAIError(false)}
+                            className="w-full bg-black hover:bg-gray-800 text-white py-3 rounded-xl font-bold transition text-sm"
+                        >
+                            ตกลง
+                        </button>
                     </div>
                 </div>
             )}
