@@ -38,37 +38,68 @@ for (const group of Object.values(_master)) {
 
 const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
     const [displayValue, setDisplayValue] = useState(value || "");
+    const [futureYearWarning, setFutureYearWarning] = useState(false);
+    const isFocused = useRef(false);
 
+    // Only sync external value when the user is not actively typing
     useEffect(() => {
-        setDisplayValue(value || "");
+        if (!isFocused.current) {
+            setDisplayValue(value || "");
+        }
     }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
-        if (input.length > 4) {
-            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
-        } else if (input.length > 2) {
-            input = `${input.slice(0, 2)}/${input.slice(2)}`;
+        const raw = e.target.value.replace(/\D/g, "").slice(0, 8);
+        let input = raw;
+        if (raw.length > 4) {
+            input = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4)}`;
+        } else if (raw.length > 2) {
+            input = `${raw.slice(0, 2)}/${raw.slice(2)}`;
         }
         setDisplayValue(input);
 
-        const originalValue = e.target.value;
-        e.target.value = input;
-        onChange(e);
-        e.target.value = originalValue;
+        // Show warning when the 4-digit year portion exceeds the current year
+        if (raw.length === 8) {
+            const typedYear = parseInt(raw.slice(4), 10);
+            setFutureYearWarning(typedYear > new Date().getFullYear());
+        } else {
+            setFutureYearWarning(false);
+        }
+
+        // Only propagate to react-datepicker when the date is complete or cleared,
+        // to prevent partial years (e.g. "2") from being parsed as year 0002.
+        if (raw.length === 8 || raw.length === 0) {
+            const originalValue = e.target.value;
+            e.target.value = input;
+            onChange(e);
+            e.target.value = originalValue;
+        }
     };
 
     return (
-        <input
-            ref={ref}
-            value={displayValue}
-            onClick={onClick}
-            onChange={handleChange}
-            className={className}
-            disabled={disabled}
-            placeholder={placeholder}
-            autoComplete="off"
-        />
+        <div className="w-full">
+            <input
+                ref={ref}
+                value={displayValue}
+                onClick={onClick}
+                onChange={handleChange}
+                onFocus={() => { isFocused.current = true; }}
+                onBlur={() => {
+                    isFocused.current = false;
+                    setDisplayValue(value || "");
+                    setFutureYearWarning(false);
+                }}
+                className={className}
+                disabled={disabled}
+                placeholder={placeholder}
+                autoComplete="off"
+            />
+            {futureYearWarning && (
+                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                    ⚠ ปีที่ระบุเกินกว่าปีปัจจุบัน
+                </p>
+            )}
+        </div>
     );
 });
 
@@ -322,6 +353,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         dateFormat="dd/MM/yyyy"
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
+                                                        maxDate={new Date()}
                                                         showYearDropdown
                                                         scrollableYearDropdown
                                                         yearDropdownItemNumber={100}
