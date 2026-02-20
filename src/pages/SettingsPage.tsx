@@ -1089,7 +1089,7 @@ export default function SettingsPage() {
                                                                     <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-300 mt-1">
-                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM BBBB HH:mm')}
+                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM YYYY HH:mm')}
                                                                 </div>
                                                             </div>
                                                         </div>

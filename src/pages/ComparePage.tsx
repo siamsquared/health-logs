@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo } from "react";
 import { useAuth } from "@/features/auth/useAuth";
 import { useHealthLogs } from "@/features/health/queries";
+import { sortByExamDate } from "@/features/health/api";
 import Navbar from "@/components/Navbar";
 import { normalizeMetricName, getCategory, categoryOrder } from "@/components/AnalysisResult";
 import { TrendingUp } from "lucide-react";
@@ -76,7 +77,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                                 <th key={log.id} className={`py-4 px-6 font-bold min-w-[140px] text-center align-middle ${i === 0 ? 'bg-blue-50/30 text-blue-900' : 'text-gray-400'}`}>
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs uppercase tracking-wider mb-1 opacity-70">{i === 0 ? 'ล่าสุด' : 'ย้อนหลัง'}</span>
-                                        <span className="text-sm">{formatDate(log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A' ? log.analysis.examinationDate : log.createdAt, 'D MMM BBBB')}</span>
+                                        <span className="text-sm">{formatDate(log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A' ? log.analysis.examinationDate : log.createdAt, 'D MMM YYYY')}</span>
                                     </div>
                                 </th>
                             ))}
@@ -152,12 +153,12 @@ export default function ComparePage() {
     const chartOptions = useMemo(() => {
         if (!logs || logs.length === 0) return {};
 
-        const sortedLogs = [...logs].sort((a, b) => a.createdAt - b.createdAt);
+        const sortedLogs = [...logs].sort((a, b) => -sortByExamDate(a, b));
         const categories = sortedLogs.map(log => {
             const dateValue = log.analysis?.examinationDate && log.analysis.examinationDate !== 'N/A'
                 ? log.analysis.examinationDate
                 : log.createdAt;
-            return formatDate(dateValue, 'D MMM BBBB');
+            return formatDate(dateValue, 'D MMM YYYY');
         });
 
         const metricSet = new Set<string>();
