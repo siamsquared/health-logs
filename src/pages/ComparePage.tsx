@@ -22,13 +22,15 @@ const CompareSkeleton = () => (
     </div>
 );
 
-const TableValueDisplay = ({ valueStr, isNormal }: { valueStr: string | number, isNormal: boolean }) => {
+const TableValueDisplay = ({ valueStr, unit, isNormal }: { valueStr: string | number, unit?: string | null, isNormal: boolean }) => {
     const match = String(valueStr).match(/^([\d.]+)\s*(.*)$/);
     if (match) {
+        // Prefer the dedicated unit field; fall back to any unit embedded in the value string (legacy data)
+        const displayUnit = unit || match[2] || null;
         return (
             <div className="flex items-baseline justify-center gap-1">
                 <span className={`text-base ${isNormal ? 'text-gray-900 font-normal' : 'text-red-600 font-medium'}`}>{match[1]}</span>
-                <span className="text-[10px] text-gray-400 font-light">{match[2]}</span>
+                {displayUnit && <span className="text-[10px] text-gray-400 font-light">{displayUnit}</span>}
             </div>
         );
     }
@@ -121,7 +123,7 @@ const ComparisonTable = ({ logs }: { logs: any[] }) => {
                                                 return (
                                                     <td key={log.id} className={`py-4 px-6 text-center align-middle ${i === 0 ? 'bg-blue-50/10' : ''}`}>
                                                         {stat && !isNA ? (
-                                                            <TableValueDisplay valueStr={stat.value} isNormal={isNormal} />
+                                                            <TableValueDisplay valueStr={stat.value} unit={stat.unit} isNormal={isNormal} />
                                                         ) : (
                                                             <span className="text-gray-300 text-lg">-</span>
                                                         )}

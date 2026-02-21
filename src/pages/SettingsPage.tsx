@@ -20,15 +20,16 @@ import labMasterData from "@/data/metadata.json";
 
 registerLocale("th", th);
 
-// Build a lookup: normalized stat name / alias → expected normal_value (text type only)
+// Build a lookup: normalized stat name / alias → expectedVal (text type only)
 const _master = (labMasterData as any).lab_master_data as Record<string, { items: any[] }>;
 const textExpectedValueMap: Record<string, string> = {};
 for (const group of Object.values(_master)) {
     for (const item of group.items) {
-        if (item.normal_value) {
-            textExpectedValueMap[item.display_name.toLowerCase()] = item.normal_value;
+        const expected = item.expectedVal ?? item.normal_value;
+        if (expected) {
+            textExpectedValueMap[item.display_name.toLowerCase()] = expected;
             for (const alias of (item.aliases || [])) {
-                textExpectedValueMap[(alias as string).toLowerCase()] = item.normal_value;
+                textExpectedValueMap[(alias as string).toLowerCase()] = expected;
             }
         }
     }
@@ -374,13 +375,8 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                         {items.map(({ stat, originalIndex }) => {
                                                             const isNumber = stat.type === 'number';
-                                                            const parseValue = (val: string) => {
-                                                                if (!val || val === "N/A") return { num: val || "", unit: "" };
-                                                                const match = val.match(/^([\d,.-]+)\s*(.*)$/);
-                                                                if (match) return { num: match[1], unit: match[2].trim() };
-                                                                return { num: val, unit: "" };
-                                                            };
-                                                            const { num, unit } = isNumber ? parseValue(stat.value) : { num: "", unit: "" };
+                                                            const statUnit = stat.unit || "";
+                                                            const num = isNumber && stat.value && stat.value !== "N/A" ? stat.value : "";
 
                                                             return (
                                                                 <div key={originalIndex}
@@ -402,22 +398,22 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                             const [intPart, decPart] = newNum.split('.');
                                                                                             if (decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
                                                                                         }
-                                                                                        handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                                        handleStatChange(originalIndex, 'value', newNum);
                                                                                     }}
                                                                                     onBlur={(e) => {
                                                                                         const parsed = parseFloat(e.target.value);
                                                                                         if (isNaN(parsed)) return;
                                                                                         const decimals = (e.target.value.split('.')[1] || '').length;
                                                                                         const formatted = parsed.toFixed(Math.min(decimals, 4));
-                                                                                        handleStatChange(originalIndex, 'value', unit ? `${formatted} ${unit}` : formatted);
+                                                                                        handleStatChange(originalIndex, 'value', formatted);
                                                                                     }}
                                                                                     step="0.0001"
                                                                                     max="9999999"
                                                                                     className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
                                                                                     placeholder="—"
                                                                                 />
-                                                                                {unit && (
-                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                                {statUnit && (
+                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{statUnit}</span>
                                                                                 )}
                                                                             </>
                                                                         ) : (
@@ -436,7 +432,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                         />
                                                                                         {isMismatch && (
                                                                                             <p className="text-xs text-amber-500 mt-1.5 font-medium">
-                                                                                                ค่าที่ป้อนไม่ตรงกับค่าปกติที่คาดหวัง (ค่าปกติ: {expectedVal})
+                                                                                                ค่าที่ป้อนไม่ตรงกับค่าที่คาดหวัง (ค่าที่คาดหวัง: {expectedVal})
                                                                                             </p>
                                                                                         )}
                                                                                     </div>

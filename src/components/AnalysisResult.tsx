@@ -90,7 +90,7 @@ const AdviceTooltip = ({ text }: { text: string }) => {
     );
 };
 
-const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | null, isNormal: boolean }) => {
+const ValueDisplay = ({ valueStr, unit, isNormal }: { valueStr?: string | number | null, unit?: string | null, isNormal: boolean }) => {
     if (valueStr === null || valueStr === undefined || valueStr === 'N/A' || valueStr === '') {
         return <div className="text-3xl font-bold text-gray-200">N/A</div>;
     }
@@ -99,10 +99,12 @@ const ValueDisplay = ({ valueStr, isNormal }: { valueStr?: string | number | nul
         const parts = match[1].split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         const formattedNum = parts.join('.');
+        // Prefer the dedicated unit field; fall back to any unit embedded in the value string (legacy data)
+        const displayUnit = unit || match[2] || null;
         return (
             <div className="flex items-baseline gap-1">
                 <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{formattedNum}</span>
-                <span className={`text-sm font-medium ${isNormal ? 'text-gray-500' : 'text-red-400'}`}>{match[2]}</span>
+                {displayUnit && <span className={`text-sm font-medium ${isNormal ? 'text-gray-500' : 'text-red-400'}`}>{displayUnit}</span>}
             </div>
         );
     }
@@ -175,7 +177,7 @@ export default function AnalysisResult({ data, showAdvice = true, showSummary = 
                                             </span>
                                         </div>
 
-                                        <ValueDisplay valueStr={stat.value} isNormal={isNormal} />
+                                        <ValueDisplay valueStr={stat.value} unit={stat.unit} isNormal={isNormal} />
 
                                         {stat.normalRange && (stat.normalRange.min != null || stat.normalRange.max != null) && (
                                             <p className="text-xs text-gray-400 mt-1">
