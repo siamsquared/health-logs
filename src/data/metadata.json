@@ -144,14 +144,16 @@
                     "display_name": "Color",
                     "aliases": ["Color", "Urine Color", "Colour", "Urine Colour"],
                     "type": "string",
-                    "normal_value": "Yellow/Straw"
+                    "normal_value": "Yellow/Straw",
+                    "expectedVal": "Yellow / Straw / Dark Yellow / Amber / Red / Brown"
                 },
                 {
                     "id": "UA002",
                     "display_name": "Turbidity",
                     "aliases": ["Turbidity", "Appearance", "Clarity", "Cloudiness", "Character", "Urine Appearance"],
                     "type": "string",
-                    "normal_value": "Clear"
+                    "normal_value": "Clear",
+                    "expectedVal": "Clear / Slightly Turbid / Turbid / Cloudy"
                 },
                 {
                     "id": "UA003",
@@ -166,35 +168,40 @@
                     "display_name": "Protein",
                     "aliases": ["Protein", "Albumin", "UA Protein", "Urine Protein", "PRO"],
                     "type": "string",
-                    "normal_value": "Negative"
+                    "normal_value": "Negative",
+                    "expectedVal": "Negative / Trace / 1+ / 2+ / 3+ / 4+"
                 },
                 {
                     "id": "UA005",
                     "display_name": "Sugar",
                     "aliases": ["Sugar", "Urine Sugar", "Urine Glucose", "GLU", "Glucose (UA)", "UA Glucose", "UA Sugar"],
                     "type": "string",
-                    "normal_value": "Negative"
+                    "normal_value": "Negative",
+                    "expectedVal": "Negative / Trace / 1+ / 2+ / 3+ / 4+"
                 },
                 {
                     "id": "UA006",
                     "display_name": "Occult Blood",
                     "aliases": ["Occult Blood", "Blood", "OB", "Hematuria", "Urine Blood", "UA Blood", "BLD"],
                     "type": "string",
-                    "normal_value": "Negative"
+                    "normal_value": "Negative",
+                    "expectedVal": "Negative / Trace / Small / Moderate / Large / 1+ / 2+ / 3+"
                 },
                 {
                     "id": "UA007",
                     "display_name": "Crystal",
                     "aliases": ["Crystal", "Crystals", "Urine Crystal", "CRY"],
                     "type": "string",
-                    "normal_value": "Not Found"
+                    "normal_value": "Not Found",
+                    "expectedVal": "Not Found / Calcium Oxalate / Uric Acid / Triple Phosphate"
                 },
                 {
                     "id": "UA008",
                     "display_name": "Ketone",
                     "aliases": ["Ketone", "Ketones", "Acetone", "KET"],
                     "type": "string",
-                    "normal_value": "Negative"
+                    "normal_value": "Negative",
+                    "expectedVal": "Negative / Trace / Small / Moderate / Large / 1+ / 2+ / 3+"
                 },
                 {
                     "id": "UA009",
@@ -214,28 +221,32 @@
                     "display_name": "Stool WBC",
                     "aliases": ["Stool WBC", "WBC (Stool)", "Fecal WBC"],
                     "type": "string",
-                    "normal_value": "Not Found"
+                    "normal_value": "Not Found",
+                    "expectedVal": "Not Found / 0-1 / 1-2 / 3-5 / 5-10 / >10 / Numerous / (cells/HPF)"
                 },
                 {
                     "id": "SE002",
                     "display_name": "Stool RBC",
                     "aliases": ["Stool RBC", "RBC (Stool)", "Fecal RBC"],
                     "type": "string",
-                    "normal_value": "Not Found"
+                    "normal_value": "Not Found",
+                    "expectedVal": "Not Found / 0-1 / 1-2 / 3-5 / 5-10 / >10 / (cells/HPF)"
                 },
                 {
                     "id": "SE003",
                     "display_name": "Parasite",
                     "aliases": ["Parasite", "Parasites", "Ova and Parasite", "O&P"],
                     "type": "string",
-                    "normal_value": "Not Found"
+                    "normal_value": "Not Found",
+                    "expectedVal": "Not Found / Hookworm egg / E. histolytica / Giardia lamblia / Ascaris"
                 },
                 {
                     "id": "SE004",
                     "display_name": "Fecal Occult Blood",
                     "aliases": ["Fecal Occult Blood", "FOB", "Stool Occult Blood", "Stool OB", "Fecal OB"],
                     "type": "string",
-                    "normal_value": "Negative"
+                    "normal_value": "Negative",
+                    "expectedVal": "Negative / Positive / Trace"
                 }
             ]
         }

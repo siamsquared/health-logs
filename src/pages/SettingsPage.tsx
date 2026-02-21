@@ -20,15 +20,16 @@ import labMasterData from "@/data/metadata.json";
 
 registerLocale("th", th);
 
-// Build a lookup: normalized stat name / alias → expected normal_value (text type only)
+// Build a lookup: normalized stat name / alias → expectedVal (text type only)
 const _master = (labMasterData as any).lab_master_data as Record<string, { items: any[] }>;
 const textExpectedValueMap: Record<string, string> = {};
 for (const group of Object.values(_master)) {
     for (const item of group.items) {
-        if (item.normal_value) {
-            textExpectedValueMap[item.display_name.toLowerCase()] = item.normal_value;
+        const expected = item.expectedVal ?? item.normal_value;
+        if (expected) {
+            textExpectedValueMap[item.display_name.toLowerCase()] = expected;
             for (const alias of (item.aliases || [])) {
-                textExpectedValueMap[(alias as string).toLowerCase()] = item.normal_value;
+                textExpectedValueMap[(alias as string).toLowerCase()] = expected;
             }
         }
     }
@@ -38,37 +39,68 @@ for (const group of Object.values(_master)) {
 
 const CustomDateInput = forwardRef(({ value, onClick, onChange, className, disabled, placeholder }: any, ref: any) => {
     const [displayValue, setDisplayValue] = useState(value || "");
+    const [futureYearWarning, setFutureYearWarning] = useState(false);
+    const isFocused = useRef(false);
 
+    // Only sync external value when the user is not actively typing
     useEffect(() => {
-        setDisplayValue(value || "");
+        if (!isFocused.current) {
+            setDisplayValue(value || "");
+        }
     }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let input = e.target.value.replace(/\D/g, "").slice(0, 8);
-        if (input.length > 4) {
-            input = `${input.slice(0, 2)}/${input.slice(2, 4)}/${input.slice(4)}`;
-        } else if (input.length > 2) {
-            input = `${input.slice(0, 2)}/${input.slice(2)}`;
+        const raw = e.target.value.replace(/\D/g, "").slice(0, 8);
+        let input = raw;
+        if (raw.length > 4) {
+            input = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4)}`;
+        } else if (raw.length > 2) {
+            input = `${raw.slice(0, 2)}/${raw.slice(2)}`;
         }
         setDisplayValue(input);
 
-        const originalValue = e.target.value;
-        e.target.value = input;
-        onChange(e);
-        e.target.value = originalValue;
+        // Show warning when the 4-digit year portion exceeds the current year
+        if (raw.length === 8) {
+            const typedYear = parseInt(raw.slice(4), 10);
+            setFutureYearWarning(typedYear > new Date().getFullYear());
+        } else {
+            setFutureYearWarning(false);
+        }
+
+        // Only propagate to react-datepicker when the date is complete or cleared,
+        // to prevent partial years (e.g. "2") from being parsed as year 0002.
+        if (raw.length === 8 || raw.length === 0) {
+            const originalValue = e.target.value;
+            e.target.value = input;
+            onChange(e);
+            e.target.value = originalValue;
+        }
     };
 
     return (
-        <input
-            ref={ref}
-            value={displayValue}
-            onClick={onClick}
-            onChange={handleChange}
-            className={className}
-            disabled={disabled}
-            placeholder={placeholder}
-            autoComplete="off"
-        />
+        <div className="w-full">
+            <input
+                ref={ref}
+                value={displayValue}
+                onClick={onClick}
+                onChange={handleChange}
+                onFocus={() => { isFocused.current = true; }}
+                onBlur={() => {
+                    isFocused.current = false;
+                    setDisplayValue(value || "");
+                    setFutureYearWarning(false);
+                }}
+                className={className}
+                disabled={disabled}
+                placeholder={placeholder}
+                autoComplete="off"
+            />
+            {futureYearWarning && (
+                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                    ⚠ ปีที่ระบุเกินกว่าปีปัจจุบัน
+                </p>
+            )}
+        </div>
     );
 });
 
@@ -322,6 +354,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                         dateFormat="dd/MM/yyyy"
                                                         className="w-full p-3 sm:p-4 bg-gray-50 border border-gray-200 focus:border-black focus:bg-white rounded-2xl outline-none transition font-medium text-gray-800 text-sm"
                                                         placeholderText="เลือกวันที่ (วว/ดด/ปปปป)"
+                                                        maxDate={new Date()}
                                                         showYearDropdown
                                                         scrollableYearDropdown
                                                         yearDropdownItemNumber={100}
@@ -342,13 +375,8 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                         {items.map(({ stat, originalIndex }) => {
                                                             const isNumber = stat.type === 'number';
-                                                            const parseValue = (val: string) => {
-                                                                if (!val || val === "N/A") return { num: val || "", unit: "" };
-                                                                const match = val.match(/^([\d,.-]+)\s*(.*)$/);
-                                                                if (match) return { num: match[1], unit: match[2].trim() };
-                                                                return { num: val, unit: "" };
-                                                            };
-                                                            const { num, unit } = isNumber ? parseValue(stat.value) : { num: "", unit: "" };
+                                                            const statUnit = stat.unit || "";
+                                                            const num = isNumber && stat.value && stat.value !== "N/A" ? stat.value : "";
 
                                                             return (
                                                                 <div key={originalIndex}
@@ -370,22 +398,22 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                             const [intPart, decPart] = newNum.split('.');
                                                                                             if (decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
                                                                                         }
-                                                                                        handleStatChange(originalIndex, 'value', unit ? `${newNum} ${unit}` : newNum);
+                                                                                        handleStatChange(originalIndex, 'value', newNum);
                                                                                     }}
                                                                                     onBlur={(e) => {
                                                                                         const parsed = parseFloat(e.target.value);
                                                                                         if (isNaN(parsed)) return;
                                                                                         const decimals = (e.target.value.split('.')[1] || '').length;
                                                                                         const formatted = parsed.toFixed(Math.min(decimals, 4));
-                                                                                        handleStatChange(originalIndex, 'value', unit ? `${formatted} ${unit}` : formatted);
+                                                                                        handleStatChange(originalIndex, 'value', formatted);
                                                                                     }}
                                                                                     step="0.0001"
                                                                                     max="9999999"
                                                                                     className="text-3xl font-bold bg-transparent border-b-2 border-dashed outline-none transition w-full text-gray-900 border-gray-200 focus:border-black"
                                                                                     placeholder="—"
                                                                                 />
-                                                                                {unit && (
-                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{unit}</span>
+                                                                                {statUnit && (
+                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{statUnit}</span>
                                                                                 )}
                                                                             </>
                                                                         ) : (
@@ -404,7 +432,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                         />
                                                                                         {isMismatch && (
                                                                                             <p className="text-xs text-amber-500 mt-1.5 font-medium">
-                                                                                                ค่าที่ป้อนไม่ตรงกับค่าปกติที่คาดหวัง (ค่าปกติ: {expectedVal})
+                                                                                                ค่าที่ป้อนไม่ตรงกับค่าที่คาดหวัง (ค่าที่คาดหวัง: {expectedVal})
                                                                                             </p>
                                                                                         )}
                                                                                     </div>
@@ -1089,7 +1117,7 @@ export default function SettingsPage() {
                                                                     <span className="truncate">{log.analysis?.hospitalName || 'ไม่ระบุโรงพยาบาล'}</span>
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-300 mt-1">
-                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM BBBB HH:mm')}
+                                                                    บันทึกเมื่อ {formatDate(log.updatedAt || log.createdAt, 'D MMM YYYY HH:mm')}
                                                                 </div>
                                                             </div>
                                                         </div>

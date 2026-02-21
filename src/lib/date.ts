@@ -11,10 +11,10 @@ dayjs.extend(customParseFormat);
 dayjs.locale('th');
 
 // Standard formats constants
-// Using BBBB for full Buddhist Era year (e.g., 2567)
-export const DATE_FORMAT = 'D MMM BBBB';      // 25 ธ.ค. 2567
+// Using YYYY for full Common Era year (e.g., 2024)
+export const DATE_FORMAT = 'D MMM YYYY';      // 25 ธ.ค. 2024
 export const TIME_FORMAT = 'HH:mm';           // 14:30
-export const DATETIME_FORMAT = 'D MMM BBBB HH:mm';
+export const DATETIME_FORMAT = 'D MMM YYYY HH:mm';
 
 /**
  * Reusable Date Formatter
@@ -51,9 +51,9 @@ export const formatDate = (
 
 // --- Convenience Wrappers ---
 
-// For "25 ธ.ค. 2567" (Thai Year)
+// For "25 ธ.ค. 2024" (CE Year)
 export const formatThaiDate = (date: any) => {
-    return formatDate(date, 'D MMM BBBB');
+    return formatDate(date, 'D MMM YYYY');
 };
 
 // For "14:30"
@@ -61,9 +61,9 @@ export const formatTime = (date: any) => {
     return formatDate(date, TIME_FORMAT);
 };
 
-// For "25 ธ.ค. 2567 14:30"
+// For "25 ธ.ค. 2024 14:30"
 export const formatDateTime = (date: any) => {
-    return formatDate(date, 'D MMM BBBB HH:mm');
+    return formatDate(date, 'D MMM YYYY HH:mm');
 };
 
 /**

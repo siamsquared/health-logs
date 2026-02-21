@@ -136,7 +136,7 @@ export default function LogsPage() {
                         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-4">ผลการตรวจ</h1>
                         <div className="flex flex-col gap-1.5 sm:gap-2 text-gray-500">
                             <span className="flex items-center gap-1.5 text-xs sm:text-sm">
-                                📅 วันที่รับการตรวจ {formatDate(activeLog.analysis?.examinationDate, 'D MMMM BBBB')}
+                                📅 วันที่รับการตรวจ {formatDate(activeLog.analysis?.examinationDate, 'D MMMM YYYY')}
                                 {(() => {
                                     const examDate = activeLog.analysis?.examinationDate;
                                     if (!examDate || examDate === 'N/A') return null;
@@ -174,7 +174,7 @@ export default function LogsPage() {
                                         : log.createdAt;
                                     return (
                                         <option key={log.id} value={log.id}>
-                                            รอบวันที่ {formatDate(dateValue, 'D MMM BBBB')}
+                                            รอบวันที่ {formatDate(dateValue, 'D MMM YYYY')}
                                         </option>
                                     );
                                 })}
@@ -205,7 +205,7 @@ export default function LogsPage() {
                 {/* Footer Metadata */}
                 {activeLog && (
                     <div className="mt-8 text-center">
-                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.createdAt)} น.</p>
+                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.updatedAt || activeLog.createdAt)} น.</p>
                     </div>
                 )}
             </div >

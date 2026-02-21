@@ -100,7 +100,8 @@ export async function reAnalyzeFromData(healthStats: any[], profile: any) {
                 "health_stats": [
                     {
                         "name": "ชื่อรายการตรวจ (ใช้ชื่อเดิมจากข้อมูลที่ส่งมา)",
-                        "value": "ค่าเดิมจากข้อมูลที่ส่งมา (ห้ามแก้ไข)",
+                        "value": "ค่าเดิมจากข้อมูลที่ส่งมา (ห้ามแก้ไข) เฉพาะตัวเลขหรือข้อความ ไม่รวมหน่วย",
+                        "unit": "หน่วยเดิมจากข้อมูลที่ส่งมา (ห้ามแก้ไข)",
                         "type": "text หรือ number (ใช้ค่าเดิม)",
                         "normalRange": { "min": "ค่าเดิม", "max": "ค่าเดิม" },
                         "category": "ค่าเดิม",
@@ -122,7 +123,7 @@ export async function reAnalyzeFromData(healthStats: any[], profile: any) {
             }
 
             *** สำคัญ ***
-            - ห้ามเปลี่ยนแปลง value, name, normalRange, category, type ของแต่ละรายการ ให้ใช้ค่าเดิมทั้งหมด
+            - ห้ามเปลี่ยนแปลง value, unit, name, normalRange, category, type ของแต่ละรายการ ให้ใช้ค่าเดิมทั้งหมด
             - ให้คำนวณ status ใหม่โดยเทียบ value กับ normalRange ตามเกณฑ์มาตรฐาน
             - ให้สร้าง advice ใหม่ตามค่าผลตรวจปัจจุบัน
             - ให้สร้าง summary, food_plan, exercise, general_advice ใหม่ทั้งหมดตามผลตรวจปัจจุบัน
@@ -229,7 +230,8 @@ export async function analyzeImage(imageUrls: string | string[], profile: any) {
                 "health_stats": [
                     {
                         "name": "test_name จาก Standard",
-                        "value": "ค่าที่ตรวจได้พร้อมหน่วย (หรือ 'N/A' ถ้าไม่มี)",
+                        "value": "ค่าที่ตรวจได้ เฉพาะตัวเลขหรือข้อความเท่านั้น ห้ามรวมหน่วยไว้ใน value (หรือ 'N/A' ถ้าไม่มี) ตัวอย่าง: '105.41' ไม่ใช่ '105.41 mL/min/1.73m²'",
+                        "unit": "หน่วยของค่านั้น ดึงจาก STANDARD_CRITERIA (เช่น 'mg/dL', 'mL/min/1.73m²') หรือ null ถ้าไม่มีหน่วย",
                         "type": "text หรือ number",
                         "normalRange": { "min": "ค่าต่ำสุด หรือ null", "max": "ค่าสูงสุด หรือ null" },
                         "category": "ชื่อหมวดจาก STANDARD_CRITERIA เช่น 'กลุ่มน้ำตาล' หรือ 'อื่นๆ'",
