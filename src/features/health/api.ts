@@ -50,7 +50,7 @@ export interface HealthLog {
     imageUrls?: string[]; // New field for multiple images
     analysis: AnalysisData;
     createdAt: number;
-    updateAt: number;
+    updatedAt: number;
     status: number;
     note?: string;
 }
@@ -72,7 +72,7 @@ export const fetchLogs = async (userId: string): Promise<HealthLog[]> => {
                     imageUrls: data.imageUrls,
                     analysis: data.analysis,
                     createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-                    updateAt: data.updateAt?.toMillis ? data.updateAt.toMillis() : data.updateAt,
+                    updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : data.updatedAt,
                     status: data.status,
                     note: data.note,
                 });
@@ -108,7 +108,7 @@ export const updateLogDate = async (userId: string, logId: string, newDate: numb
 };
 export const updateLogAnalysis = async (userId: string, logId: string, analysis: AnalysisData) => {
     const logRef = doc(db, "users", userId, "reports", logId);
-    await updateDoc(logRef, { analysis, updateAt: serverTimestamp() });
+    await updateDoc(logRef, { analysis, updatedAt: serverTimestamp() });
 };
 
 export const updateLogNote = async (userId: string, logId: string, note: string) => {

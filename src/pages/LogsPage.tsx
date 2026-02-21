@@ -205,7 +205,7 @@ export default function LogsPage() {
                 {/* Footer Metadata */}
                 {activeLog && (
                     <div className="mt-8 text-center">
-                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.createdAt)} น.</p>
+                        <p className="text-xs text-gray-400 font-medium">บันทึกข้อมูลเมื่อ {formatDateTime(activeLog.updatedAt || activeLog.createdAt)} น.</p>
                     </div>
                 )}
             </div >

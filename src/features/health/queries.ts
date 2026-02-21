@@ -25,7 +25,7 @@ export const useHealthLogs = (userId: string | undefined) => {
                         imageUrls: data.imageUrls || (data.imageUrl ? [data.imageUrl] : []),
                         analysis: data.analysis,
                         createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : data.createdAt,
-                        updateAt: data.updateAt?.toMillis ? data.updateAt.toMillis() : data.updateAt,
+                        updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : data.updatedAt,
                         status: data.status,
                         note: data.note,
                     });
