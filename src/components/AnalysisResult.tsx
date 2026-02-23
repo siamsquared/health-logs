@@ -102,7 +102,7 @@ const ValueDisplay = ({ valueStr, unit, isNormal }: { valueStr?: string | number
         // Prefer the dedicated unit field; fall back to any unit embedded in the value string (legacy data)
         const displayUnit = unit || match[2] || null;
         return (
-            <div className="flex items-baseline gap-1">
+            <div className="flex flex-col items-start">
                 <span className={`text-3xl font-bold ${isNormal ? 'text-gray-900' : 'text-red-600'}`}>{formattedNum}</span>
                 {displayUnit && <span className={`text-sm font-medium ${isNormal ? 'text-gray-500' : 'text-red-400'}`}>{displayUnit}</span>}
             </div>
