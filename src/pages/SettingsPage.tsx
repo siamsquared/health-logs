@@ -394,10 +394,9 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                     value={num}
                                                                                     onChange={(e) => {
                                                                                         let newNum = e.target.value;
-                                                                                        if (newNum.includes('.')) {
-                                                                                            const [intPart, decPart] = newNum.split('.');
-                                                                                            if (decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
-                                                                                        }
+                                                                                        const [intPart, decPart] = newNum.split('.');
+                                                                                        if (intPart.replace('-', '').length > 7) return;
+                                                                                        if (decPart !== undefined && decPart.length > 4) newNum = `${intPart}.${decPart.slice(0, 4)}`;
                                                                                         handleStatChange(originalIndex, 'value', newNum);
                                                                                     }}
                                                                                     onBlur={(e) => {
@@ -420,7 +419,8 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                             (() => {
                                                                                 const expectedVal = textExpectedValueMap[stat.name.toLowerCase()];
                                                                                 const currentVal = stat.value ?? "";
-                                                                                const isMismatch = !!expectedVal && currentVal !== "" && currentVal !== "N/A" && currentVal.toLowerCase() !== expectedVal.toLowerCase();
+                                                                                const validVals = expectedVal ? expectedVal.split(' / ').map((v: string) => v.trim().toLowerCase()) : [];
+                                                                                const isMismatch = !!expectedVal && currentVal !== "" && currentVal !== "N/A" && !validVals.includes(currentVal.trim().toLowerCase());
                                                                                 return (
                                                                                     <div className="w-full">
                                                                                         <input
