@@ -386,7 +386,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                     </div>
 
                                                                     {/* Editable value */}
-                                                                    <div className="flex items-baseline gap-2 mb-2">
+                                                                    <div className="flex flex-col items-start mb-2">
                                                                         {isNumber ? (
                                                                             <>
                                                                                 <input
@@ -412,7 +412,7 @@ const ReportModal = ({ log, userId, user, onClose }: { log: any, userId: string,
                                                                                     placeholder="—"
                                                                                 />
                                                                                 {statUnit && (
-                                                                                    <span className="text-sm font-medium flex-shrink-0 text-gray-500">{statUnit}</span>
+                                                                                    <span className="text-sm font-medium text-gray-500">{statUnit}</span>
                                                                                 )}
                                                                             </>
                                                                         ) : (
